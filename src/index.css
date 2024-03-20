@@ -1,0 +1,88 @@
+body {
+  margin: 0;
+}
+
+.app {
+  height: 100vh;
+  display: flex;
+  flex-flow: column nowrap;
+  justify-content: stretch;
+  overflow: hidden;
+}
+.head {
+  flex: none;
+  height: 64px;
+  padding: 0 16px;
+  display: flex;
+  align-items: center;
+  box-shadow: 4px 10px 10px rgba(0,0,0,.03);
+}
+.body {
+  flex: 1;
+  display: flex;
+  justify-content: stretch;
+  overflow: hidden;
+}
+.material {
+  flex: none;
+  width: 240px;
+  filter: drop-shadow(2px 0 6px rgba(0,0,0,.04));
+}
+.property {
+  flex: none;
+  width: 240px;
+  box-shadow: -2px 0 6px rgba(0,0,0,.04);
+}
+.canvas-wrapper {
+  flex: 1;
+  overflow: hidden;
+  min-width: 400px;
+  position: relative;
+}
+.zoom-control {
+  position: absolute;
+  right: 24px;
+  bottom: 24px;
+  display: flex;
+  align-items: center;
+  padding-left: 8px;
+  padding-right: 8px;
+  border: 1px solid #e0e0e0;
+  border-radius: 18px;
+  background: #fff;
+}
+.zoom-control .icon {
+  margin: 5px;
+  padding: 4px;
+  font-size: 16px;
+}
+.icon {
+  color: #282c4a;
+  cursor: pointer;
+}
+.icon.disabled {
+  opacity: 0.4;
+}
+.zoom-control .label {
+  color: #282c4a;
+  font-size: 14px;
+  padding: 0 4px;
+  user-select: none;
+}
+.view-control {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  padding: 12px 16px;
+  background: #fff;
+  border-radius: 8px;
+  filter: drop-shadow(0 2px 8px rgba(0,0,0,.15));
+}
+.undo-control .icon {
+  padding: 8px;
+  font-size: 24px;
+  border-radius: 4px;
+}
+.undo-control .icon:hover {
+  background: #f5f5f5;
+}
