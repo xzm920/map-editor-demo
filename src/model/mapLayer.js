@@ -1,6 +1,6 @@
 import { generateKeyBetween } from 'fractional-indexing';
-import { LAYER } from '../constants';
-import { isPointInRect, isPointInRotatedRect } from '../geometry';
+import { LAYER, TILE_SIZE } from '../constants';
+import { isPointInRect, isPointInRotatedRect, isRectInRect } from '../geometry';
 
 export class MapLayer {
   constructor(width, height, zIndex) {
@@ -10,6 +10,10 @@ export class MapLayer {
     this.zIndex = zIndex;
     this.zOrders = [];
     this.zOrderToItem = new Map();
+  }
+
+  getBoundingRect() {
+    return { left: 0, top: 0, width: this.parent.width * TILE_SIZE, height: this.parent.height * TILE_SIZE };
   }
 
   getItems() {
@@ -24,7 +28,7 @@ export class MapLayer {
   findMapItemByPoint(point) {
     for (const zOrder of this.zOrders) {
       const mapItem = this.zOrderToItem.get(zOrder);
-      const rect = { x: mapItem.left, y: mapItem.top, width: mapItem.width, height: mapItem.height };
+      const rect = { left: mapItem.left, top: mapItem.top, width: mapItem.width, height: mapItem.height };
       if (mapItem.angle === 0) {
         if (isPointInRect(point, rect)) {
           return mapItem;
@@ -36,6 +40,23 @@ export class MapLayer {
       }
     }
     return null;
+  }
+
+  _canMove(mapItem, left, top) {
+    // 子类可以覆盖
+    return true;
+  }
+
+  canMove(mapItem, left, top) {
+    const bound = mapItem.getBoundingRect(left, top);
+    const layerBound = this.getBoundingRect();
+    if (!isRectInRect(bound, layerBound)) {
+      return false;
+    }
+    if (!this._canMove(mapItem, left, top)) {
+      return false;
+    }
+    return true;
   }
 
   add(mapItem, emit = true) {
@@ -83,21 +104,26 @@ export class FloorLayer extends MapLayer {
     super(width, height, LAYER.floor);
   }
 
-  canAdd(floor) {
+  _canMove(mapItem, left, top) {
     const existed = this.zOrders.some((zOrder) => {
       const item = this.zOrderToItem.get(zOrder);
-      return item.left === floor.left && item.top === floor.top;
+      return item !== mapItem && item.left === left && item.top === top;
     });
-    if (existed) {
-      return false;
-    }
-    return true;
+    return !existed;
   }
 }
 
 export class WallLayer extends MapLayer {
   constructor(width, height, isMaskPlayer) {
     super(width, height, isMaskPlayer ? LAYER.wallFront : LAYER.wallBehind);
+  }
+
+  _canMove(mapItem, left, top) {
+    const existed = this.zOrders.some((zOrder) => {
+      const item = this.zOrderToItem.get(zOrder);
+      return item !== mapItem && item.left === left && item.top === top;
+    });
+    return !existed;
   }
 }
 

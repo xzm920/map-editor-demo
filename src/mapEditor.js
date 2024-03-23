@@ -27,9 +27,50 @@ export class MapEditor extends EventEmitter {
     });
     this.history = new HistoryManager(this.model);
 
-    this.toolSelect = new ToolSelect(this.model, this.view);
+    this.selected = null;
+
+    this.toolSelect = new ToolSelect(this);
 
     this._unlisten = this._listen();
+  }
+
+  select(mapItem) {
+    this.selected = mapItem;
+    this.view.select(mapItem);
+    this.emit('selected', { mapItem });
+  }
+
+  unselect() {
+    this.view.unselect();
+    this.emit('unselected');
+  }
+
+  dispose() {
+    this.toolSelect.dispose();
+    this.view.dispose();
+    this.history.dispose();
+    this._unlisten();
+  }
+
+  _listen() {
+    const handleModelEvent = (type, event) => {
+      this.emit(type, event);
+    };
+    const handleViewEvent = (type, event) => {
+      this.emit(type, event);
+    };
+    const handleHistory = () => {
+      this.emit('history');
+    };
+
+    this.model.on('*', handleModelEvent);
+    this.view.on('*', handleViewEvent);
+    this.history.on('history', handleHistory);
+    return () => {
+      this.model.off('*', handleModelEvent);
+      this.view.off('*', handleViewEvent);
+      this.history.off('history', handleHistory);
+    };
   }
 
   get zoom() {
@@ -60,6 +101,14 @@ export class MapEditor extends EventEmitter {
     this.view.toggleEffect();
   }
 
+  get alignTile() {
+    return this.view.alignTile;
+  }
+
+  toggleAlignTile() {
+    this.view.toggleAlignTile();
+  }
+
   get showMask() {
     return this.view.showMask;
   }
@@ -82,27 +131,5 @@ export class MapEditor extends EventEmitter {
 
   redo() {
     this.history.redo();
-  }
-
-  dispose() {
-    this.toolSelect.dispose();
-    this._unlisten();
-  }
-
-  _listen() {
-    const handleHistory = () => {
-      this.emit('history');
-    };
-    this.history.on('history', handleHistory);
-    
-    // 转发事件
-    const handleViewEvent = (type, event) => {
-      this.emit(type, event);
-    };
-    this.view.on('*', handleViewEvent);
-    return () => {
-      this.view.off('*', handleViewEvent);
-      this.history.off('history', handleHistory);
-    };
   }
 }

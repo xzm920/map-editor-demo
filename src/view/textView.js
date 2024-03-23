@@ -1,6 +1,7 @@
 import { fabric } from "fabric";
 import { textOptions } from "./config";
 import { DEFAULT_LINE_HEIGHT } from "../constants";
+import { textControls } from "./controls";
 
 export class TextView {
   constructor(model) {
@@ -12,7 +13,7 @@ export class TextView {
   }
 
   addObject(model) {
-    this.object = new fabric.Textbox(model.content, {
+    this.object = new fabric.Textbox(model.text, {
       left: model.left,
       top: model.top,
       width: model.width,
@@ -28,11 +29,16 @@ export class TextView {
       lineHeight: transformLineHeight(model.lineHeight, model.fontSize),
       ...textOptions,
     });
+    this.object.set({
+      padding: 6,
+      hasControls: true,
+    });
+    this.object.controls = textControls;
   }
 
   updateObject(model) {
     this.object.set({
-      text: model.content,
+      text: model.text,
       left: model.left,
       top: model.top,
       width: model.width,

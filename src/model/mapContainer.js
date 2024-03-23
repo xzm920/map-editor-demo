@@ -1,6 +1,6 @@
 import { EventEmitter } from '../eventEmitter';
 import { AvatarLayer, BackgroundLayer, EffectLayer, FloorLayer, FreeLayer, TiledLayer, WallLayer } from './mapLayer';
-import { DESC_LAYERS, LAYER, USER_LAYER } from '../constants';
+import { DESC_LAYERS, LAYER, TILE_SIZE, USER_LAYER } from '../constants';
 import { getMapItemCtor } from './mapItem'; 
 
 export class MapContainer extends EventEmitter {
@@ -10,6 +10,10 @@ export class MapContainer extends EventEmitter {
     this.width = width;
     this.height = height;
     this.layers = this.createLayers(width, height);
+  }
+
+  getBoundingRect() {
+    return { left: 0, top: 0, width: this.width * TILE_SIZE, height: this.height * TILE_SIZE };
   }
 
   createLayers(width, height) {
@@ -53,9 +57,17 @@ export class MapContainer extends EventEmitter {
     return items;
   }
 
-  canAdd(mapItem) {
-    const layer = this.getLayer(mapItem.zIndex);
-    return layer.canAdd(mapItem);
+  canMove(mapItem, left, top) {
+    if (mapItem.zIndex === LAYER.wallBehind || mapItem.zIndex === LAYER.wallFront) {
+      const zIndex = mapItem.getOppositeLayer();
+      const oppositeLayer = this.getLayer(zIndex);
+      const existed = oppositeLayer.zOrders.some((zOrder) => {
+        const item = oppositeLayer.zOrderToItem.get(zOrder);
+        return item.left === left && item.top === top;
+      });
+      if (existed) return false;
+    }
+    return true;
   }
 
   add(mapItem) {
@@ -76,7 +88,7 @@ export class MapContainer extends EventEmitter {
     if (mapItem.userLayer !== USER_LAYER.object && mapItem.userLayer !== USER_LAYER.freeObject) return;
     
     layer.remove(mapItem, false);
-    const newZIndex = mapItem.getInverseLayer();
+    const newZIndex = mapItem.getOppositeLayer();
     const oldZOrder = mapItem.zOrder;
     mapItem.update({
       isMaskPlayer: !mapItem.isMaskPlayer,

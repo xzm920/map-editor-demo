@@ -48,7 +48,6 @@ export const MAP_ITEM_TYPE = {
   image: 'image',
   spawn: 'spawn',
   impassable: 'impassable',
-  npc: 'npc',
   // TODO: more types
 };
 

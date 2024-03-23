@@ -1,4 +1,6 @@
+
 body {
+  --primary-color: #8f7ef4;
   margin: 0;
 }
 
@@ -77,6 +79,8 @@ body {
   background: #fff;
   border-radius: 8px;
   filter: drop-shadow(0 2px 8px rgba(0,0,0,.15));
+  display: flex;
+  flex-flow: column nowrap;
 }
 .undo-control .icon {
   padding: 8px;
@@ -85,4 +89,22 @@ body {
 }
 .undo-control .icon:hover {
   background: #f5f5f5;
+}
+
+.detail {
+  padding: 24px;
+}
+.detail-image {
+  width: 104px;
+  height: 104px;
+  object-fit: contain;
+}
+.detail .icon {
+  margin-right: 4px;
+  padding: 4px;
+}
+.detail .icon.active {
+  background-color: #f5f5f5;
+  border-radius: 4px;
+  color: var(--primary-color);
 }

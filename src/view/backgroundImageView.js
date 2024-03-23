@@ -1,6 +1,7 @@
 import { fabric } from "fabric";
 import { imagePool } from "./imagePool";
 import { baseOptions } from "./config";
+import { backgroundImageControls } from "./controls";
 
 export class BackgroundImageView {
   constructor(model) {
@@ -22,6 +23,12 @@ export class BackgroundImageView {
       scaleY: model.height / model.imageHeight,
       ...baseOptions,
     });
+    this.object.set({
+      lockScalingFlip: true,
+      padding: 6,
+      hasControls: true,
+    });
+    this.object.controls = backgroundImageControls;
     if (imgElem == null) {
       imagePool.load(model.imageURL).then((elem) => {
         this.object.setElement(elem);

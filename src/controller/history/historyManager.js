@@ -8,6 +8,7 @@ import { UpdateCommand } from './updateCommand';
 export class HistoryManager extends EventEmitter {
   constructor(mapContainer) {
     super();
+    
 
     this.mapContainer = mapContainer;
     this.maxUndoTimes = 100;
@@ -21,40 +22,6 @@ export class HistoryManager extends EventEmitter {
 
   dispose() {
     this._unlisten();
-  }
-
-  canUndo() {
-    return this.undoStack.length > 0;
-  }
-
-  undo() {
-    const stackItem = this.undoStack.pop();
-    if (!stackItem) return;
-
-    this.ignoreModelEvent = true;
-    for (const command of stackItem) {
-      command.undo();
-    }
-    this.redoStack.push(stackItem);
-    this.ignoreModelEvent = false;
-    this.emit('history');
-  }
-
-  canRedo() {
-    return this.redoStack.length > 0;
-  }
-
-  redo() {
-    const stackItem = this.redoStack.pop();
-    if (!stackItem) return;
-
-    this.ignoreModelEvent = true;
-    for (const command of stackItem) {
-      command.execute();
-    }
-    this.undoStack.push(stackItem);
-    this.ignoreModelEvent = false;
-    this.emit('history');
   }
 
   _listen() {
@@ -107,6 +74,40 @@ export class HistoryManager extends EventEmitter {
       this.mapContainer.off('sortItem', handleSortItem);
       this.mapContainer.off('toggleMaskPlayer', handleToggleMaskPlayer);
     };
+  }
+
+  canUndo() {
+    return this.undoStack.length > 0;
+  }
+
+  undo() {
+    const stackItem = this.undoStack.pop();
+    if (!stackItem) return;
+
+    this.ignoreModelEvent = true;
+    for (const command of stackItem) {
+      command.undo();
+    }
+    this.redoStack.push(stackItem);
+    this.ignoreModelEvent = false;
+    this.emit('history');
+  }
+
+  canRedo() {
+    return this.redoStack.length > 0;
+  }
+
+  redo() {
+    const stackItem = this.redoStack.pop();
+    if (!stackItem) return;
+
+    this.ignoreModelEvent = true;
+    for (const command of stackItem) {
+      command.execute();
+    }
+    this.undoStack.push(stackItem);
+    this.ignoreModelEvent = false;
+    this.emit('history');
   }
 
   pushCommand(command) {

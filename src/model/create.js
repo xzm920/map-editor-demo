@@ -37,9 +37,9 @@ export function createBackgroundImageFromResource(resource, left, top) {
   });
 }
 
-export function createText(content, left, top) {
+export function createText(text, left, top) {
   return new MapText({
-    content,
+    text,
     left,
     top,
     width: 100,

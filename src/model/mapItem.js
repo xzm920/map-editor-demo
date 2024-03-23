@@ -1,6 +1,6 @@
 import { DEFAULT_TEXT_COLOR, DEFAULT_FONT_SIZE, LAYER, MAP_ITEM_TYPE, USER_LAYER, DEFAULT_TEXT_ALIGN, TILE_SIZE } from "../constants";
 import { patchToChanges, uuid } from "../utils";
-import { getBoundingRect, isRectInRect } from '../geometry';
+import { calcBoundingRect, isRectInRect } from '../geometry';
 
 export class MapItem {
   // FIXME:
@@ -43,14 +43,36 @@ export class MapItem {
       && this.zIndex !== LAYER.freeObjAboveAvatar;
   }
 
-  move(left, top) {
-    const rect = { x: left, y: top, width: this.width, height: this.height };
-    const bRect = getBoundingRect(rect, this.angle);
-    const containerRect = { x: 0, y: 0, width: this.parent.width * TILE_SIZE, height: this.parent.height * TILE_SIZE };
-    if (!isRectInRect(bRect, containerRect)) {
-      throw Error('map item moved out of the map');
+  getBoundingRect(left, top) {
+    return calcBoundingRect({
+      left: left ?? this.left,
+      top: top ?? this.top,
+      width: this.width,
+      height: this.height,
+    }, this.angle);
+  }
+
+  canMove(left, top) {
+    if (this.tiled && (left % TILE_SIZE !== 0 || top % TILE_SIZE !== 0)) {
+      return false;
     }
-    this.update({ left, top });
+    if (!this.parent.canMove(this, left, top)) {
+      return false;
+    }
+    if (!this.parent.parent.canMove(this, left, top)) {
+      return false;
+    }
+    return true;
+  }
+
+  move(left, top) {
+    if (!this.canMove(left, top)) {
+      throw Error(`Cannot not move to (${left}, ${top})`);
+    }
+    
+    if (left !== this.left || top !== this.top) {
+      this.update({ left, top });
+    }
   }
 
   update(patch, reason) {
@@ -118,6 +140,10 @@ export class Wall extends MapItem {
     this.name = options.name;
     this.imageURL = options.imageURL;
   }
+
+  getOppositeLayer() {
+    return this.zIndex === LAYER.wallFront ? LAYER.wallBehind : LAYER.wallFront;
+  }
 }
 
 export class TiledObject extends MapItem {
@@ -132,8 +158,12 @@ export class TiledObject extends MapItem {
     this.imageURL = options.imageURL;
   }
 
-  getInverseLayer() {
+  getOppositeLayer() {
     return this.zIndex === LAYER.objAboveAvatar ? LAYER.objBelowAvatar : LAYER.objAboveAvatar;
+  }
+
+  toggleMaskPlayer() {
+    this.parent.parent.toggleMaskPlayer(this);
   }
 
   toggleCollider() {
@@ -165,7 +195,11 @@ export class MapImage extends MapItem {
     this.flipY = options.flipY ?? false;
   }
 
-  getInverseLayer() {
+  toggleMaskPlayer() {
+    this.parent.parent.toggleMaskPlayer(this);
+  }
+
+  getOppositeLayer() {
     return this.zIndex === LAYER.freeObjAboveAvatar ? LAYER.freeObjBelowAvatar : LAYER.freeObjAboveAvatar;
   }
 
@@ -190,7 +224,7 @@ export class MapText extends MapItem {
     this.userLayer = USER_LAYER.freeObject;
     this.zIndex = options.isMaskPlayer ? LAYER.freeObjAboveAvatar : LAYER.freeObjBelowAvatar;
     this.height = options.height ?? 0; // TODO:
-    this.content = options.content ?? '';
+    this.text = options.text ?? '';
     this.fontSize = options.fontSize ?? DEFAULT_FONT_SIZE;
     this.color = options.color ?? DEFAULT_TEXT_COLOR;
     this.opacity = options.opacity ?? 1;
@@ -201,20 +235,24 @@ export class MapText extends MapItem {
     this.lineHeight = options.lineHeight ?? null;
   }
 
-  getInverseLayer() {
+  getOppositeLayer() {
     return this.zIndex === LAYER.freeObjAboveAvatar ? LAYER.freeObjBelowAvatar : LAYER.freeObjAboveAvatar;
+  }
+
+  toggleMaskPlayer() {
+    this.parent.parent.toggleMaskPlayer(this);
   }
 
   rotate(angle, left, top) {
     this.update({ angle, left, top });
   }
 
-  resize(left, top, width) {
-    this.update({ left, top, width });
+  resize(left, top, width, height) {
+    this.update({ left, top, width, height });
   }
 
-  setContent(content) {
-    this.update({ content });
+  setText(text, height) {
+    this.update({ text, height });
   }
 
   setOpacity(opacity) {
@@ -276,16 +314,6 @@ export class Impassable extends MapItem {
   }
 }
 
-export class NPC extends MapItem {
-  constructor(options) {
-    super(options);
-
-    this.type = MAP_ITEM_TYPE.npc;
-    this.userLayer = null;
-    this.zIndex = LAYER.avatar;
-  }
-}
-
 const typeToCtor = new Map();
 typeToCtor.set(MAP_ITEM_TYPE.backgroundImage, BackgroundImage);
 typeToCtor.set(MAP_ITEM_TYPE.floor, Floor);
@@ -295,7 +323,6 @@ typeToCtor.set(MAP_ITEM_TYPE.text, MapText);
 typeToCtor.set(MAP_ITEM_TYPE.image, MapImage);
 typeToCtor.set(MAP_ITEM_TYPE.spawn, Spawn);
 typeToCtor.set(MAP_ITEM_TYPE.impassable, Impassable);
-typeToCtor.set(MAP_ITEM_TYPE.npc, NPC);
 
 export function getMapItemCtor(type) {
   return typeToCtor.get(type);

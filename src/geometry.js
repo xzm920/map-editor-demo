@@ -1,15 +1,15 @@
 const { sin, cos, PI } = Math;
 
 export function isPointInRect(point, rect) {
-  return point.x >= rect.x
-    && point.y >= rect.y
-    && point.x <= rect.x + rect.width
-    && point.y <= rect.y + rect.height;
+  return point.x >= rect.left
+    && point.y >= rect.top
+    && point.x <= rect.left + rect.width
+    && point.y <= rect.top + rect.height;
 }
 
 export function isPointInRotatedRect(point, rect, angle) {
-  const x1 = point.x - rect.x;
-  const y1 = point.y - rect.y;
+  const x1 = point.x - rect.left;
+  const y1 = point.y - rect.top;
   const rad = toRadian(-angle);
   const x2 = x1 * cos(rad) - y1 * sin(rad);
   const y2 = x1 * sin(rad) + y1 * cos(rad);
@@ -24,20 +24,20 @@ function toRadian(angle) {
 }
 
 export function isRectInRect(rect1, rect2) {
-  return rect1.x >= rect2.x
-    && rect1.y >= rect2.x
-    && rect1.x + rect1.width <= rect2.x + rect2.width
-    && rect1.y + rect1.height <= rect2.x + rect2.height;
+  return rect1.left >= rect2.left
+    && rect1.top >= rect2.top
+    && rect1.left + rect1.width <= rect2.left + rect2.width
+    && rect1.top + rect1.height <= rect2.top + rect2.height;
 }
 
-export function getBoundingRect(rect, angle) {
+export function calcBoundingRect(rect, angle) {
   if (angle === 0) return rect;
 
   const rad = toRadian(angle);
-  const tl = { x: rect.x, y: rect.y };
-  const tr = { x: rect.x + rect.width, y: rect.y };
-  const br = { x: rect.x + rect.width, y: rect.y + rect.height };
-  const bl = { x: rect.x, y: rect.y + rect.height };
+  const tl = { x: rect.left, y: rect.top };
+  const tr = { x: rect.left + rect.width, y: rect.top };
+  const br = { x: rect.left + rect.width, y: rect.top + rect.height };
+  const bl = { x: rect.left, y: rect.top + rect.height };
   const rtr = rotatePoint(tr, tl, rad);
   const rbr = rotatePoint(br, tl, rad);
   const rbl = rotatePoint(bl, tl, rad);
@@ -46,8 +46,8 @@ export function getBoundingRect(rect, angle) {
   const minY = Math.min(tl.y, rtr.y, rbr.y, rbl.y);
   const maxY = Math.max(tl.y, rtr.y, rbr.y, rbl.y);
   return {
-    x: minX,
-    y: minY,
+    left: minX,
+    top: minY,
     width: maxX - minX,
     height: maxY - minY,
   };

@@ -1,6 +1,7 @@
 import { fabric } from "fabric";
 import { imagePool } from "./imagePool";
 import { baseOptions } from "./config";
+import { imageControls } from './controls';
 
 export class ImageView {
   constructor(model) {
@@ -26,6 +27,11 @@ export class ImageView {
       opacity: model.opacity,
       ...baseOptions,
     });
+    this.object.set({
+      hasControls: true,
+      padding: 6,
+    });
+    this.object.controls = imageControls;
     if (imgElem == null) {
       imagePool.load(model.imageURL).then((elem) => {
         this.object.setElement(elem);

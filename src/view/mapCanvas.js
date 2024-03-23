@@ -21,6 +21,7 @@ export class MapCanvas extends EventEmitter {
     this.canvasHeight = canvasHeight;
     this.minZoom = minZoom ?? 0.1;
     this.maxZoom = maxZoom ?? 1.5;
+
     const canvasOptions = {
       width: canvasWidth,
       height: canvasHeight,
@@ -36,15 +37,17 @@ export class MapCanvas extends EventEmitter {
       selectionLineWidth: 2,
     };
     this.canvas = new fabric.Canvas(elem, canvasOptions);
-    this.canvas.on('after:render', () => {
-      console.debug('[render]')
-    });
+
+    this.idToView = new Map();
+    this.objectToView = new Map();
 
     // state
-    this.showMask = false; // 进入隔离模式
-    this.showEffect = false;
     this.panRestricted = true;
     this.canvasPadding = 100;
+    this.showMask = false; // 进入隔离模式
+    this.showEffect = false;
+    this.alignTile = false;
+    this.alignThreshold = 10; // 视口坐标系10像素
 
     // controller
     this.mouseWheel = new MouseWheel(this);
@@ -64,28 +67,29 @@ export class MapCanvas extends EventEmitter {
 
     this.debouncedRender();
 
-    // Map: id => MapItemView
-    this.itemViews = new Map();
-
     this._unlisten = this._listen();
+  }
+  
+  dispose() {
+    this.mouseWheel.dispose();
+    this.mouseMiddle.dispose();
+    this._unlisten();
+
+    this.canvas.off();
+    this.canvas.dispose();
+    this.canvas = null;
   }
 
   get zoom() {
     return this.canvas.getZoom();
   }
 
-  dispose() {
-    this.mouseWheel.dispose();
-    this.mouseMiddle.dispose();
-    this._unlisten();
-  }
-
   getItemView(mapItem) {
-    return this.itemViews.get(mapItem.id);
+    return this.idToView.get(mapItem.id);
   }
 
   setItemView(mapItem, itemView) {
-    this.itemViews.set(mapItem.id, itemView);
+    this.idToView.set(mapItem.id, itemView);
   }
 
   _listen() {
@@ -134,11 +138,17 @@ export class MapCanvas extends EventEmitter {
   add(view) {
     view.parent = this;
     this.canvas.add(view.object);
+    this.objectToView.set(view.object, view);
   }
 
   remove(view) {
     view.parent = null;
     this.canvas.remove(view.object);
+    this.objectToView.set(view.object, null);
+  }
+
+  getViewByObject(object) {
+    return this.objectToView.get(object);
   }
 
   onLoad() {
@@ -157,7 +167,7 @@ export class MapCanvas extends EventEmitter {
     const pushLayerObjects = (zIndex) => {
       const layer = this.mapContainer.getLayer(zIndex);
       layer.getItems().map((item) => {
-        const itemView = this.itemViews.get(item.id);
+        const itemView = this.idToView.get(item.id);
         objects.push(itemView.object);
         if (itemView.impassableObject) {
           impassableObjects.push(itemView.impassableObject);
@@ -196,12 +206,17 @@ export class MapCanvas extends EventEmitter {
     this.emit('toggleEffect');
   }
 
+  toggleAlignTile() {
+    this.alignTile = !this.alignTile;
+    this.emit('toggleAlignTile');
+  }
+
   zoomToPoint(zoom, left, top) {
     this.canvas.zoomToPoint({ x: left, y: top }, zoom);
     if (this.panRestricted) {
       this._restrictMapPan();
     }
-    // this._restartCursorImmediately();
+    this._restartCursorImmediately();
     this.maskView.update();
     this.render();
 
@@ -217,7 +232,7 @@ export class MapCanvas extends EventEmitter {
     const translateY = (this.canvasHeight - height * TILE_SIZE * scale) / 2;
     const vpt = [scale, 0, 0, scale, translateX, translateY];
     this.canvas.setViewportTransform(vpt);
-    // this._restartCursorImmediately();
+    this._restartCursorImmediately();
     this.maskView.update();
     this.render();
 
@@ -236,7 +251,7 @@ export class MapCanvas extends EventEmitter {
 
     const { left, top } = this.canvas.getCenter();
     this.zoomToPoint(newZoom, left, top);
-    // this._restartCursorImmediately();
+    this._restartCursorImmediately();
     this.maskView.update();
     this.render();
   }
@@ -246,7 +261,7 @@ export class MapCanvas extends EventEmitter {
     if (this.panRestricted) {
       this._restrictMapPan();
     }
-    // this._restartCursorImmediately();
+    this._restartCursorImmediately();
     this.maskView.update();
     this.render();
   }
@@ -288,12 +303,12 @@ export class MapCanvas extends EventEmitter {
     }
   }
 
-  // _restartCursorImmediately() {
-  //   const activeObject = this.canvas.getActiveObject();
-  //   if (activeObject && activeObject.type === 'textbox' && activeObject.isEditing) {
-  //     activeObject.initDelayedCursor(true);
-  //   }
-  // }
+  _restartCursorImmediately() {
+    const activeObject = this.canvas.getActiveObject();
+    if (activeObject && activeObject.type === 'textbox' && activeObject.isEditing) {
+      activeObject.initDelayedCursor(true);
+    }
+  }
 
   setCanvasSize(canvasWidth, canvasHeight) {
     this.canvasWidth = canvasWidth;
@@ -303,6 +318,17 @@ export class MapCanvas extends EventEmitter {
       this._restrictMapPan();
     }
     this.maskView.update();
+    this.render();
+  }
+
+  unselect() {
+    this.canvas.discardActiveObject();
+    this.render();
+  }
+
+  select(mapItem) {
+    const itemView = this.getItemView(mapItem);
+    this.canvas.setActiveObject(itemView.object);
     this.render();
   }
 }

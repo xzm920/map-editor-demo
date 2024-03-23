@@ -25,8 +25,43 @@ export function fetchImage(url) {
   });
 }
 
-export function snapPointToGrid(point) {
-  const x = Math.floor(point.x / TILE_SIZE) * TILE_SIZE;
-  const y = Math.floor(point.y / TILE_SIZE) * TILE_SIZE;
-  return { x, y };
+export function toTiledPoint(point) {
+  return {
+    x: toTiledCoord(point.x),
+    y: toTiledCoord(point.y),
+  };
+}
+
+export function toTiledCoord(x) {
+  if (x % TILE_SIZE === 0) return x;
+  return Math.floor(x / TILE_SIZE) * TILE_SIZE;
+}
+
+export function clamp(val, min, max) {
+  if (val < min) return min;
+  if (val > max) return max;
+  return val;
+}
+
+const { abs } = Math;
+
+export function getRectOffsetToClosedTile(rect, threshold) {
+  const offsetLeft = getOffsetToClosedTile(rect.left, threshold);
+  const offsetRight = getOffsetToClosedTile(rect.left + rect.width, threshold);
+  const offsetTop = getOffsetToClosedTile(rect.top, threshold);
+  const offsetBottom = getOffsetToClosedTile(rect.top + rect.height, threshold);
+  const minOffsetX = abs(offsetLeft) <= abs(offsetRight) ? offsetLeft : offsetRight;
+  const minOffsetY = abs(offsetTop) <= abs(offsetBottom) ? offsetTop : offsetBottom;
+  const offsetX = abs(minOffsetX) <= threshold ? minOffsetX : 0;
+  const offsetY = abs(minOffsetY) <= threshold ? minOffsetY : 0;
+  return { offsetX, offsetY };
+}
+
+function getOffsetToClosedTile(coord) {
+  const gridNum = Math.floor(coord / TILE_SIZE);
+  const offsetToLowTile = gridNum * TILE_SIZE - coord;
+  const offsetToHighTile = (gridNum + 1) * TILE_SIZE - coord;
+  return Math.abs(offsetToLowTile) <= Math.abs(offsetToHighTile)
+    ? offsetToLowTile
+    : offsetToHighTile;
 }
