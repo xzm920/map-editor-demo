@@ -100,13 +100,15 @@ export class ToolSelect {
 
     const handleContextMenu = (e) => {
       const point = this.mapCanvas.canvas.getPointer(e);
-      const mapItem = this.mapContainer.getItemByPoint(point);
-      if (mapItem) {
-        this.mapEditor.select(mapItem);
+      this.selection.selectByPoint(point);
+      const { items } = this.selection;
+      if (items.length === 1) {
         this.mapEditor.emit('contextMenu', {
-          mapItem,
+          mapItem: items[0],
           position: { left: e.pageX, top: e.pageY },
         });
+      } else if (items.length > 0) {
+        // TODO: 选中多个元素时的上下文菜单
       }
     };
 

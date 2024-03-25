@@ -114,9 +114,14 @@ function App() {
     };
     mapEditor.on('history', handleHistory);
 
-    const handleSelected = ({ mapItem }) => {
-      setSelected({ ...mapItem });
-      mapItemRef.current = mapItem;
+    const handleSelected = ({ items }) => {
+      if (items.length === 1) {
+        setSelected({ ...items[0] });
+        mapItemRef.current = items[0];
+      } else {
+        setSelected(null);
+        mapItemRef.current = null;
+      }
     };
     mapEditor.on('selected', handleSelected);
 
@@ -499,7 +504,9 @@ function ContextMenu({ showContextMenu, setShowContextMenu, contextMenuPosition,
 
   const mapEditor = editorRef.current;
   const mapItem = mapItemRef.current;
-  const intersectItems = mapEditor.getIntersectItems(mapItem);
+  if (mapEditor == null || mapItem == null) return null;
+
+  const intersectItems =  mapEditor.getIntersectItems(mapItem);
   const menuItems = getMenuItems(mapItem, intersectItems);
 
   const menuStyle = {

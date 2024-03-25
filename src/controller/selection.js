@@ -1,5 +1,5 @@
 import { clamp } from "lodash";
-import { LAYER, NON_EFFECT_LAYERS } from "../constants";
+import { LAYER, NON_EFFECT_LAYERS, TILE_SIZE } from "../constants";
 import { getBBox, isPointInRect, isPointInRotatedRect } from "../geometry";
 import { getRectOffsetToClosestTile, toTiledPoint } from "../utils";
 
@@ -10,6 +10,12 @@ export class Selection {
     this.mapCanvas = mapEditor.view;
     this.items = [];
     this.bbox = null;
+
+    this._unlisten = this._listen();
+  }
+
+  dispose() {
+    this._unlisten();
   }
 
   get tiled() {
@@ -20,8 +26,7 @@ export class Selection {
     return this.items.length === 0;
   }
 
-  // FIXME: shiftkey 多选
-  selectByPoint(point, shiftKey) {
+  selectByPoint(point, shiftKey = false) {
     if (!shiftKey) {
       let clickSelected = false;
       if (this.items.length === 1) {
@@ -93,6 +98,7 @@ export class Selection {
 
   move(movePoint, startPoint, selectedStartPos) {
     const { movementX, movementY } = this._getMovement(movePoint, startPoint);
+    if (movementX === 0 && movementY === 0) return;
 
     // TODO:
     const activeObject = this.mapCanvas.canvas.getActiveObject();
@@ -105,11 +111,14 @@ export class Selection {
 
   finishMove(upPoint, startPoint) {
     const { movementX, movementY } = this._getMovement(upPoint, startPoint);
-
+    if (movementX === 0 && movementY === 0) return;
+    
     this.mapCanvas.unselect();
+    this._isBusy = true;
     this.items.forEach((item) => {
       item.move(item.left + movementX, item.top + movementY);
     });
+    this._isBusy = false;
     this.bbox = this._getBBox();
     this.mapCanvas.select(this.items);
   }
@@ -130,6 +139,13 @@ export class Selection {
   }
 
   _getMovement(movePoint, startPoint) {
+    movePoint = { x: Math.round(movePoint.x), y: Math.round(movePoint.y) };
+    startPoint = { x: Math.round(startPoint.x), y: Math.round(startPoint.y) };
+
+    if (movePoint.x === startPoint.x && movePoint.y === startPoint.y) {
+      return { movementX: 0, movementY: 0 };
+    }
+
     if (this.tiled) {
       startPoint = toTiledPoint(startPoint);
       movePoint = toTiledPoint(movePoint);
@@ -148,9 +164,42 @@ export class Selection {
     const mapBound = this.mapEditor.model.getBoundingRect();
     x = clamp(x, mapBound.left, mapBound.left + mapBound.width - this.bbox.width);
     y = clamp(y, mapBound.top, mapBound.top + mapBound.height - this.bbox.height);
-    return {
-      movementX: x - this.bbox.left,
-      movementY: y - this.bbox.top,
+
+    let movementX = x - this.bbox.left;
+    let movementY = y - this.bbox.top;
+    if (this.tiled) {
+      movementX = movementX >= 0
+        ? Math.floor(movementX / TILE_SIZE) * TILE_SIZE
+        : Math.ceil(movementX / TILE_SIZE) * TILE_SIZE;
+      movementY = movementY >= 0
+      ? Math.floor(movementY / TILE_SIZE) * TILE_SIZE
+      : Math.ceil(movementY / TILE_SIZE) * TILE_SIZE;
+    }
+    return { movementX, movementY };
+  }
+
+  _listen() {
+    const handleModelChange = (type, eventData) => {
+      if (this._isBusy) return;
+      if (this.isEmpty) return;
+
+      const inSelection = this.items.some((item) => this.mapContainer.has(item));
+      if (inSelection) {
+        if (type === 'before:modelChange') {
+          this.mapCanvas.unselect();
+        } else {
+          const items = this.items.filter((item) => this.mapContainer.has(item));
+          if (items.length) {
+            this.select(items);
+          }
+        }
+      } else {
+        this.unselect();
+      }
+    };
+    this.mapContainer.on('*', handleModelChange);
+    return () => {
+      this.mapContainer.off('*', handleModelChange);
     };
   }
 }

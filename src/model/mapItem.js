@@ -76,6 +76,7 @@ export class MapItem {
   }
 
   update(patch, reason) {
+    this.notify('before:modelChange');
     const changes = patchToChanges(this, patch);
     Object.assign(this, patch);
 

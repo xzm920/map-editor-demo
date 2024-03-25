@@ -65,7 +65,9 @@ export class MapContainer extends EventEmitter {
         const item = oppositeLayer.zOrderToItem.get(zOrder);
         return item.left === left && item.top === top;
       });
-      if (existed) return false;
+      if (existed) {
+        return false;
+      }
     }
     return true;
   }
@@ -80,6 +82,11 @@ export class MapContainer extends EventEmitter {
     layer.remove(mapItem);
   }
 
+  has(mapItem) {
+    const layer = this.getLayer(mapItem.zIndex);
+    return layer.has(mapItem);
+  }
+
   toggleMaskPlayer(mapItem, zOrder) {
     // 业务限制不能同时设置isMaskPlayer,isCollider为true
     if (mapItem.isCollider) return;
@@ -87,6 +94,7 @@ export class MapContainer extends EventEmitter {
     const layer = this.getLayer(mapItem.zIndex);
     if (mapItem.userLayer !== USER_LAYER.object && mapItem.userLayer !== USER_LAYER.freeObject) return;
     
+    this.notify('before:modelChange');
     layer.remove(mapItem, false);
     const newZIndex = mapItem.getOppositeLayer();
     const oldZOrder = mapItem.zOrder;

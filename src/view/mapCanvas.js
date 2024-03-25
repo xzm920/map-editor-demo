@@ -334,11 +334,12 @@ export class MapCanvas extends EventEmitter {
   }
 
   select(items) {
-    if (items.length === 1) {
-      const itemView = this.getItemView(items[0]);
-      this.canvas.setActiveObject(itemView.object);
-    } else {
-      const objects = items.map((item) => this.getItemView(item).object);
+    this.canvas.discardActiveObject();
+    const itemViews = items.map((item) => this.getItemView(item)).filter((v) => v != null);
+    const objects = itemViews.map((view) => view.object).filter((v) => v != null);
+    if (objects.length === 1) {
+      if (objects[0]) this.canvas.setActiveObject(objects[0]);
+    } else if (objects.length === 2) {
       const activeSelection = this._createActiveSelection(objects);
       this.canvas.setActiveObject(activeSelection);
     }
@@ -353,6 +354,8 @@ export class MapCanvas extends EventEmitter {
   addToSelection(mapItem) {
     const itemView = this.getItemView(mapItem);
     const active = this.canvas.getActiveObject();
+    if (!itemView.object || !active) return;
+
     if (active.type === 'activeSelection') {
       active.addWithUpdate(itemView.object);
     } else {
@@ -365,6 +368,8 @@ export class MapCanvas extends EventEmitter {
   removeFromSelection(mapItem) {
     const itemView = this.getItemView(mapItem);
     const active = this.canvas.getActiveObject();
+    if (!itemView.object || !active) return;
+
     if (active.type === 'activeSelection') {
       active.removeWithUpdate(itemView.object);
     } else {

@@ -61,6 +61,9 @@ export class MapLayer {
   }
 
   add(mapItem, emit = true) {
+    if (emit) {
+      this.notify('before:modelChange');
+    }
     if (!mapItem.zOrder) {
       const highest = this.zOrders[this.zOrders.length - 1];
       mapItem.zOrder = generateKeyBetween(highest, null);
@@ -78,6 +81,9 @@ export class MapLayer {
   }
 
   remove(mapItem, emit = true) {
+    if (emit) {
+      this.notify('before:modelChange');
+    }
     const index = this.zOrders.indexOf(mapItem.zOrder);
     if (index === -1) return;
 
@@ -87,6 +93,10 @@ export class MapLayer {
     if (emit) {
       this.notify('remove', { mapItem });
     }
+  }
+
+  has(mapItem) {
+    return this.zOrders.includes(mapItem.zOrder);
   }
 
   notify(event, data) {
@@ -145,6 +155,7 @@ class OverlapLayer extends MapLayer {
       oldZOrder,
       newZOrder: zOrder,
     };
+    this.notify('before:modelChange');
     this.notify('sortItem', data);
   }
 
