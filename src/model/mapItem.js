@@ -1,6 +1,6 @@
 import { DEFAULT_TEXT_COLOR, DEFAULT_FONT_SIZE, LAYER, MAP_ITEM_TYPE, USER_LAYER, DEFAULT_TEXT_ALIGN, TILE_SIZE } from "../constants";
 import { patchToChanges, uuid } from "../utils";
-import { calcBoundingRect, isRectInRect } from '../geometry';
+import { getBBox, isRectInRect } from '../geometry';
 
 export class MapItem {
   // FIXME:
@@ -43,10 +43,10 @@ export class MapItem {
       && this.zIndex !== LAYER.freeObjAboveAvatar;
   }
 
-  getBoundingRect(left, top) {
-    return calcBoundingRect({
-      left: left ?? this.left,
-      top: top ?? this.top,
+  getBoundingRect() {
+    return getBBox({
+      left: this.left,
+      top: this.top,
       width: this.width,
       height: this.height,
     }, this.angle);
@@ -174,6 +174,14 @@ export class TiledObject extends MapItem {
       isCollider: !this.isCollider,
     });
   }
+
+  levelUpAbove(item) {
+    this.parent.levelUpAbove(this, item);
+  }
+
+  levelDownBelow(item) {
+    this.parent.levelDownBelow(this, item);
+  }
 }
 
 export class MapImage extends MapItem {
@@ -213,6 +221,14 @@ export class MapImage extends MapItem {
 
   rotate(angle, left, top) {
     this.update({ angle, left, top });
+  }
+
+  levelUpAbove(item) {
+    this.parent.levelUpAbove(this, item);
+  }
+
+  levelDownBelow(item) {
+    this.parent.levelDownBelow(this, item);
   }
 }
 
@@ -285,6 +301,14 @@ export class MapText extends MapItem {
 
   setLineHeight(lineHeight) {
     this.update({ lineHeight });
+  }
+
+  levelUpAbove(item) {
+    this.parent.levelUpAbove(this, item);
+  }
+
+  levelDownBelow(item) {
+    this.parent.levelDownBelow(this, item);
   }
 }
 

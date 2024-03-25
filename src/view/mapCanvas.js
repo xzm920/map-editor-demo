@@ -8,6 +8,8 @@ import { MaskView } from "./maskView";
 import { MouseWheel } from "../controller/mouseWheel";
 import { MouseMiddle } from "../controller/mouseMiddle";
 import { EventEmitter } from "../eventEmitter";
+import { selectionControls } from "./controls";
+import { activeSelectionOptions } from './config';
 
 fabric.Object.prototype.objectCaching = false;
 
@@ -37,6 +39,10 @@ export class MapCanvas extends EventEmitter {
       selectionLineWidth: 2,
     };
     this.canvas = new fabric.Canvas(elem, canvasOptions);
+    // HACK:
+    this.canvas._shouldClearSelection = function() {
+      return false;
+    };
 
     this.idToView = new Map();
     this.objectToView = new Map();
@@ -67,13 +73,15 @@ export class MapCanvas extends EventEmitter {
 
     this.debouncedRender();
 
-    this._unlisten = this._listen();
+    this._unlistenCanvas = this._listenCanvas();
+    this._unlistenModel = this._listenModel();
   }
   
   dispose() {
     this.mouseWheel.dispose();
     this.mouseMiddle.dispose();
-    this._unlisten();
+    this._unlistenCanvas();
+    this._unlistenModel();
 
     this.canvas.off();
     this.canvas.dispose();
@@ -92,7 +100,11 @@ export class MapCanvas extends EventEmitter {
     this.idToView.set(mapItem.id, itemView);
   }
 
-  _listen() {
+  _listenCanvas() {
+    return () => {};
+  }
+
+  _listenModel() {
     const handleAdd = ({ mapItem }) => {
       const ItemViewCtor = getMapItemViewCtor(mapItem.type);
       const itemView = new ItemViewCtor(mapItem);
@@ -321,14 +333,54 @@ export class MapCanvas extends EventEmitter {
     this.render();
   }
 
-  unselect() {
-    this.canvas.discardActiveObject();
-    this.render();
+  select(items) {
+    if (items.length === 1) {
+      const itemView = this.getItemView(items[0]);
+      this.canvas.setActiveObject(itemView.object);
+    } else {
+      const objects = items.map((item) => this.getItemView(item).object);
+      const activeSelection = this._createActiveSelection(objects);
+      this.canvas.setActiveObject(activeSelection);
+    }
+    this.canvas.requestRenderAll();
   }
 
-  select(mapItem) {
+  unselect() {
+    this.canvas.discardActiveObject();
+    this.canvas.requestRenderAll();
+  }
+
+  addToSelection(mapItem) {
     const itemView = this.getItemView(mapItem);
-    this.canvas.setActiveObject(itemView.object);
-    this.render();
+    const active = this.canvas.getActiveObject();
+    if (active.type === 'activeSelection') {
+      active.addWithUpdate(itemView.object);
+    } else {
+      const activeSelection = this._createActiveSelection([active, itemView.object]);
+      this.canvas.setActiveObject(activeSelection);
+    }
+    this.canvas.requestRenderAll();
+  }
+
+  removeFromSelection(mapItem) {
+    const itemView = this.getItemView(mapItem);
+    const active = this.canvas.getActiveObject();
+    if (active.type === 'activeSelection') {
+      active.removeWithUpdate(itemView.object);
+    } else {
+      this.canvas.discardActiveObject();
+    }
+    this.canvas.requestRenderAll();
+  }
+
+  _createActiveSelection(objects) {
+    const activeSelection = new fabric.ActiveSelection(objects, {
+      canvas: this.canvas,
+      lockMovementX: true,
+      lockMovementY: true,
+      ...activeSelectionOptions,
+    });
+    activeSelection.controls = selectionControls;
+    return activeSelection;
   }
 }

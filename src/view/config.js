@@ -16,3 +16,12 @@ export const textOptions = {
   editingBorderColor: '#8F7EF4',
   cursorColor: '#282C4A',
 };
+
+export const activeSelectionOptions = {
+  strokeWidth: 0,
+  borderScaleFactor: 2,
+  borderColor: '#8F7EF4',
+  borderOpacityWhenMoving: 1,
+  cornerColor: '#FFFFFF',
+  cornerStrokeColor: '#8F7EF4',
+};

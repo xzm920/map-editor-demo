@@ -1,6 +1,6 @@
 import { generateKeyBetween } from 'fractional-indexing';
 import { LAYER, TILE_SIZE } from '../constants';
-import { isPointInRect, isPointInRotatedRect, isRectInRect } from '../geometry';
+import { getBBox, isPointInRect, isPointInRotatedRect, isRectInRect, isRotatedRectIntersect } from '../geometry';
 
 export class MapLayer {
   constructor(width, height, zIndex) {
@@ -25,8 +25,9 @@ export class MapLayer {
   }
 
   // TODO: 优化算法
-  findMapItemByPoint(point) {
-    for (const zOrder of this.zOrders) {
+  getItemByPoint(point) {
+    const descZOrders = this.zOrders.slice().reverse();
+    for (const zOrder of descZOrders) {
       const mapItem = this.zOrderToItem.get(zOrder);
       const rect = { left: mapItem.left, top: mapItem.top, width: mapItem.width, height: mapItem.height };
       if (mapItem.angle === 0) {
@@ -48,7 +49,7 @@ export class MapLayer {
   }
 
   canMove(mapItem, left, top) {
-    const bound = mapItem.getBoundingRect(left, top);
+    const bound = getBBox({left, top, width: mapItem.width, height: mapItem.height}, mapItem.angle);
     const layerBound = this.getBoundingRect();
     if (!isRectInRect(bound, layerBound)) {
       return false;
@@ -147,6 +148,16 @@ class OverlapLayer extends MapLayer {
     this.notify('sortItem', data);
   }
 
+  getIntersectItems(mapItem) {
+    // TODO: 性能优化
+    return this.zOrders
+      .map((zOrder) => this.zOrderToItem.get(zOrder))
+      .filter((item) => {
+        if (item === mapItem) return true;
+        return isRotatedRectIntersect(item, item.angle, mapItem, mapItem.angle);
+      });
+  }
+
   levelUpAbove(mapItem, target) {
     if (mapItem === target) return;
     const index = this.zOrders.indexOf(mapItem.zOrder);
@@ -174,7 +185,7 @@ export class TiledLayer extends OverlapLayer {
   }
 }
 
-export class FreeLayer extends MapLayer {
+export class FreeLayer extends OverlapLayer {
   constructor(width, height, isMaskPlayer) {
     super(width, height, isMaskPlayer ? LAYER.freeObjAboveAvatar : LAYER.freeObjBelowAvatar);
   }

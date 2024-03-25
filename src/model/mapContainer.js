@@ -107,16 +107,21 @@ export class MapContainer extends EventEmitter {
     this.emit('toggleMaskPlayer', data);
   }
 
-  findMapItemByPoint(point, layers = DESC_LAYERS) {
+  getItemByPoint(point, layers = DESC_LAYERS) {
     const descLayers = layers.slice().sort().reverse();
     for (const zIndex of descLayers) {
       const layer = this.getLayer(zIndex);
-      const mapItem = layer.findMapItemByPoint(point);
+      const mapItem = layer.getItemByPoint(point);
       if (mapItem) {
         return mapItem;
       }
     }
     return null;
+  }
+
+  getIntersectItems(mapItem) {
+    const layer = this.getLayer(mapItem.zIndex);
+    return layer.getIntersectItems ? layer.getIntersectItems(mapItem) : [];
   }
 
   notify(event, data) {

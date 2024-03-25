@@ -8,6 +8,7 @@ import { materials } from "../mock/materials";
 import { resources } from '../mock/resources';
 import { MAP_ITEM_TYPE, TEXT_ALIGN, TILE_SIZE } from "./constants";
 import { createBackgroundImageFromResource, createMapItemFromMaterial, createText } from "./model/create";
+import { createPortal } from "react-dom";
 
 function App() {
   const canvasWrapper = useRef();
@@ -20,6 +21,8 @@ function App() {
   const [canRedo, setCanRedo] = useState(false);
   const [selected, setSelected] = useState(null);
   const mapItemRef = useRef(null);
+  const [showContextMenu, setShowContextMenu] = useState(false);
+  const [contextMenuPosition, setContextMenuPosition] = useState(null);
 
   const canZoomIn = editorRef.current ? zoom < editorRef.current.maxZoom : false;
   const canZoomOut = editorRef.current ? zoom > editorRef.current.minZoom : false;
@@ -59,9 +62,11 @@ function App() {
       mapEditor.model.add(tiled3);
       const tiled4 = createMapItemFromMaterial(materials.tiledObject2, 3 * TILE_SIZE, 2 * TILE_SIZE);
       mapEditor.model.add(tiled4);
-      const sticker = createMapItemFromMaterial(materials.sticker, 4 * TILE_SIZE, 2 * TILE_SIZE);
-      // sticker.rotate(30, sticker.left, sticker.top);
-      mapEditor.model.add(sticker);
+      const sticker1 = createMapItemFromMaterial(materials.sticker, 4 * TILE_SIZE, 6 * TILE_SIZE);
+      mapEditor.model.add(sticker1);
+      const sticker2 = createMapItemFromMaterial(materials.sticker, 4 * TILE_SIZE, 2 * TILE_SIZE);
+      sticker2.rotate(30, sticker2.left, sticker2.top);
+      mapEditor.model.add(sticker2);
       const spawn = createMapItemFromMaterial(materials.spawn, 2 * TILE_SIZE, 2 * TILE_SIZE);
       mapEditor.model.add(spawn);
       const impassable1 = createMapItemFromMaterial(materials.impassable, 4 * TILE_SIZE, 3 * TILE_SIZE);
@@ -132,6 +137,12 @@ function App() {
     };
     mapEditor.on('toggleMaskPlayer', handleToggleMaskPlayer);
 
+    const handleContextMenu = ({ mapItem, position }) => {
+      setShowContextMenu(true);
+      setContextMenuPosition(position);
+    };
+    mapEditor.on('contextMenu', handleContextMenu);
+
     const handleResize = throttle(() => {
       const { clientWidth, clientHeight } = canvasWrapper.current;
       mapEditor.view.setCanvasSize(clientWidth, clientHeight);
@@ -148,6 +159,7 @@ function App() {
       mapEditor.off('unselected', handleUnselected);
       mapEditor.off('update', handleUpdate);
       mapEditor.off('toggleMaskPlayer', handleToggleMaskPlayer);
+      mapEditor.off('contextMenu', handleContextMenu);
       window.removeEventListener('resize', handleResize);
       mapEditor.dispose();
     };
@@ -208,12 +220,18 @@ function App() {
     >
       <div className="app">
         <div className="head">
-          <UndoControl
-            undoDisabled={!canUndo}
-            redoDisabled={!canRedo}
-            onUndo={handleUndo}
-            onRedo={handleRedo}
-          />
+          <div>
+            <UndoControl
+              undoDisabled={!canUndo}
+              redoDisabled={!canRedo}
+              onUndo={handleUndo}
+              onRedo={handleRedo}
+            />
+          </div>
+          <div>地图编辑器 Demo</div>
+          <div>
+            <GithubButton />
+          </div>
         </div>
         <div className="body">
           <div className="material">
@@ -236,6 +254,13 @@ function App() {
               onZoomIn={handleZoomIn}
               onZoomOut={handleZoomOut}
             />
+            <ContextMenu
+              showContextMenu={showContextMenu}
+              setShowContextMenu={setShowContextMenu}
+              contextMenuPosition={contextMenuPosition}
+              mapItemRef={mapItemRef}
+              editorRef={editorRef}
+            />
           </div>
           <div className="property">
             {selected && <PropertyPannel mapItem={selected} mapItemRef={mapItemRef} />}
@@ -243,6 +268,16 @@ function App() {
         </div>
       </div>
     </ConfigProvider>
+  );
+}
+
+function GithubButton() {
+  return (
+    <a href="https://github.com/xzm920/map-editor-demo" target="_blank" style={{marginRight:4}}>
+      <svg height="32" viewBox="0 0 16 16" version="1.1" width="32">
+        <path d="M8 0c4.42 0 8 3.58 8 8a8.013 8.013 0 0 1-5.45 7.59c-.4.08-.55-.17-.55-.38 0-.27.01-1.13.01-2.2 0-.75-.25-1.23-.54-1.48 1.78-.2 3.65-.88 3.65-3.95 0-.88-.31-1.59-.82-2.15.08-.2.36-1.02-.08-2.12 0 0-.67-.22-2.2.82-.64-.18-1.32-.27-2-.27-.68 0-1.36.09-2 .27-1.53-1.03-2.2-.82-2.2-.82-.44 1.1-.16 1.92-.08 2.12-.51.56-.82 1.28-.82 2.15 0 3.06 1.86 3.75 3.64 3.95-.23.2-.44.55-.51 1.07-.46.21-1.61.55-2.33-.66-.15-.24-.6-.83-1.23-.82-.67.01-.27.38.01.53.34.19.73.9.82 1.13.16.45.68 1.31 2.69.94 0 .67.01 1.3.01 1.49 0 .21-.15.45-.55.38A7.995 7.995 0 0 1 0 8c0-4.42 3.58-8 8-8Z"></path>
+      </svg>
+    </a>
   );
 }
 
@@ -317,6 +352,8 @@ function TiledDetail({ mapItem, mapItemRef }) {
 }
 
 function ImageDetail({ mapItem, mapItemRef }) {
+  const [opacity, setOpacity] = useState(mapItem.opacity * 100);
+
   return (
     <div className="detail">
       <div>
@@ -328,10 +365,10 @@ function ImageDetail({ mapItem, mapItemRef }) {
       <div>
         <div>贴图效果</div>
         <div>
-          {/* TODO: */}
           <Slider
-            value={mapItem.opacity * 100}
-            onChange={(val) => {
+            value={opacity}
+            onChange={setOpacity}
+            onChangeComplete={(val) => {
               mapItemRef.current.setOpacity(val / 100);
             }}
           />
@@ -351,16 +388,17 @@ function ImageDetail({ mapItem, mapItemRef }) {
 }
 
 function TextDetail({ mapItem, mapItemRef }) {
-  console.log(mapItem.isBold)
+  const [opacity, setOpacity] = useState(mapItem.opacity * 100);
+
   return (
     <div className="detail">
       <div>
         <div>文字效果</div>
         <div>
-          {/* TODO: */}
           <Slider
-            value={mapItem.opacity * 100}
-            onChange={(val) => {
+            value={opacity}
+            onChange={setOpacity}  
+            onChangeComplete={(val) => {
               mapItemRef.current.setOpacity(val / 100);
             }}
           />
@@ -416,6 +454,100 @@ function TextDetail({ mapItem, mapItemRef }) {
         </div>
       </div>
     </div>
+  );
+}
+
+function getMenuItems(mapItem, intersectItems) {
+  let menuItems = [];
+  if (intersectItems.length > 1) {
+    const index = intersectItems.indexOf(mapItem);
+    const isBottom = index === 0;
+    const isTop = index === intersectItems.length - 1;
+    if (!isTop) {
+      menuItems.push({
+        label: '置于顶层',
+        key: 'bringToFront',
+      });
+      menuItems.push({
+        label: '上移一层',
+        key: 'bringForward',
+      });
+    }
+    if (!isBottom) {
+      menuItems.push({
+        label: '下移一层',
+        key: 'sendBackwards',
+      })
+      menuItems.push({
+        label: '置于底层',
+        key: 'sendToBack',
+      });
+    }
+  }
+  
+  menuItems.push({
+    key: 'divider',
+  });
+  menuItems.push({
+    label: '删除',
+    key: 'delete',
+  });
+  return menuItems;
+}
+function ContextMenu({ showContextMenu, setShowContextMenu, contextMenuPosition, mapItemRef, editorRef }) {
+  if (!showContextMenu) return null;
+
+  const mapEditor = editorRef.current;
+  const mapItem = mapItemRef.current;
+  const intersectItems = mapEditor.getIntersectItems(mapItem);
+  const menuItems = getMenuItems(mapItem, intersectItems);
+
+  const menuStyle = {
+    left: contextMenuPosition.left,
+    top: contextMenuPosition.top,
+  };
+
+  const handleClickMask = () => {
+    setShowContextMenu(false);
+  };
+
+  const handleContextMenu = (e) => {
+    e.preventDefault();
+    setShowContextMenu(false);
+  };
+
+  const selectMenuItem = ({ key }) => {
+    setShowContextMenu(false);
+    if (key === 'delete') {
+      mapEditor.remove(mapItem);
+    } else if (key === 'bringForward') {
+      const index = intersectItems.indexOf(mapItem);
+      const target = intersectItems[index + 1];
+      mapItem.levelUpAbove(target);
+    } else if (key === 'bringToFront') {
+      mapItem.levelUpAbove(intersectItems[intersectItems.length - 1]);
+    } else if (key === 'sendBackwards') {
+      const index = intersectItems.indexOf(mapItem);
+      const target = intersectItems[index - 1];
+      mapItem.levelDownBelow(target);
+    } else if (key === 'sendToBack') {
+      mapItem.levelDownBelow(intersectItems[0]);
+    }
+  };
+
+  return createPortal(
+    <div className="menu-mask" onClick={handleClickMask} onContextMenuCapture={handleContextMenu}>
+      <div className="menu" style={menuStyle}>
+        {menuItems.map((item, index) => {
+          if (item.key === 'divider') {
+            return <div className="menu-divier" key={`${item.key}-${index}`}></div>;
+          } else {
+            return <div className="menu-item" key={item.key} onClick={() => selectMenuItem(item)}>{item.label}</div>;
+          }
+        })}
+      </div>
+    </div>,
+    document.body,
   );
 }
 

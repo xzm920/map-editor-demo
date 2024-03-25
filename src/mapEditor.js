@@ -3,6 +3,7 @@ import { MapCanvas } from './view/mapCanvas';
 import { HistoryManager } from './controller/history/historyManager';
 import { EventEmitter } from './eventEmitter';
 import { ToolSelect } from './controller/tool/toolSelect';
+import { Selection } from './controller/selection';
 
 export class MapEditor extends EventEmitter {
   constructor(options) {
@@ -26,23 +27,23 @@ export class MapEditor extends EventEmitter {
       canvasHeight,
     });
     this.history = new HistoryManager(this.model);
-
-    this.selected = null;
+    this.selection = new Selection(this);
 
     this.toolSelect = new ToolSelect(this);
 
     this._unlisten = this._listen();
   }
 
-  select(mapItem) {
-    this.selected = mapItem;
-    this.view.select(mapItem);
-    this.emit('selected', { mapItem });
+  select(items) {
+    this.selection.select(items);
   }
 
   unselect() {
-    this.view.unselect();
-    this.emit('unselected');
+    this.selection.unselect();
+  }
+
+  getItemByPoint(point) {
+    return this.selection.getItemByPoint(point);
   }
 
   dispose() {
@@ -131,5 +132,17 @@ export class MapEditor extends EventEmitter {
 
   redo() {
     this.history.redo();
+  }
+
+  add(mapItem) {
+    this.model.add(mapItem);
+  }
+
+  remove(mapItem) {
+    this.model.remove(mapItem);
+  }
+
+  getIntersectItems(mapItem) {
+    return this.model.getIntersectItems(mapItem);
   }
 }

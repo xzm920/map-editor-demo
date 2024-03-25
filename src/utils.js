@@ -45,7 +45,7 @@ export function clamp(val, min, max) {
 
 const { abs } = Math;
 
-export function getRectOffsetToClosedTile(rect, threshold) {
+export function getRectOffsetToClosestTile(rect, threshold) {
   const offsetLeft = getOffsetToClosedTile(rect.left, threshold);
   const offsetRight = getOffsetToClosedTile(rect.left + rect.width, threshold);
   const offsetTop = getOffsetToClosedTile(rect.top, threshold);

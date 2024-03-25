@@ -1,4 +1,46 @@
-const { sin, cos, PI } = Math;
+function degreeToRadian(angle) {
+  return angle * Math.PI / 180;
+}
+
+function rotatePoint(p, p0, rad) {
+  if (rad === 0) return p;
+
+  const dx = p.x - p0.x;
+  const dy = p.y - p0.y;
+  const sin = Math.sin(rad);
+  const cos = Math.cos(rad);
+  return {
+    x: dx * cos - dy * sin + p0.x,
+    y: dx * sin + dy * cos + p0.y,
+  };
+}
+
+function getPoints(rect, angle) {
+  const tl = { x: rect.left, y: rect.top };
+  const tr = { x: rect.left + rect.width, y: rect.top };
+  const br = { x: rect.left + rect.width, y: rect.top + rect.height };
+  const bl = { x: rect.left, y: rect.top + rect.height };
+  if (angle === 0) {
+    return { tl, tr, br, bl };
+  }
+
+  const rad = degreeToRadian(angle);
+  return {
+    tl,
+    tr: rotatePoint(tr, tl, rad),
+    br: rotatePoint(br, tl, rad),
+    bl: rotatePoint(bl, tl, rad),
+  };
+}
+
+function pointsToBBox(points) {
+  const { tl, tr, br, bl } = points;
+  const left = Math.min(tl.x, tr.x, br.x, bl.x);
+  const top = Math.min(tl.y, tr.y, br.y, bl.y);
+  const width = Math.max(tl.x, tr.x, br.x, bl.x) - left;
+  const height = Math.max(tl.y, tr.y, br.y, bl.y) - top;
+  return { left, top, width, height };
+}
 
 export function isPointInRect(point, rect) {
   return point.x >= rect.left
@@ -8,19 +50,10 @@ export function isPointInRect(point, rect) {
 }
 
 export function isPointInRotatedRect(point, rect, angle) {
-  const x1 = point.x - rect.left;
-  const y1 = point.y - rect.top;
-  const rad = toRadian(-angle);
-  const x2 = x1 * cos(rad) - y1 * sin(rad);
-  const y2 = x1 * sin(rad) + y1 * cos(rad);
-  return x2 >= 0
-    && y2 >= 0
-    && x2 <= rect.width
-    && y2 <= rect.height;
-}
-
-function toRadian(angle) {
-  return angle * PI / 180;
+  const origin = { x: rect.left, y: rect.top };
+  const radians = degreeToRadian(-angle);
+  const rotatedPoint = rotatePoint(point, origin, radians);
+  return isPointInRect(rotatedPoint, rect);
 }
 
 export function isRectInRect(rect1, rect2) {
@@ -30,34 +63,56 @@ export function isRectInRect(rect1, rect2) {
     && rect1.top + rect1.height <= rect2.top + rect2.height;
 }
 
-export function calcBoundingRect(rect, angle) {
+export function getBBox(rect, angle) {
   if (angle === 0) return rect;
 
-  const rad = toRadian(angle);
-  const tl = { x: rect.left, y: rect.top };
-  const tr = { x: rect.left + rect.width, y: rect.top };
-  const br = { x: rect.left + rect.width, y: rect.top + rect.height };
-  const bl = { x: rect.left, y: rect.top + rect.height };
-  const rtr = rotatePoint(tr, tl, rad);
-  const rbr = rotatePoint(br, tl, rad);
-  const rbl = rotatePoint(bl, tl, rad);
-  const minX = Math.min(tl.x, rtr.x, rbr.x, rbl.x);
-  const maxX = Math.max(tl.x, rtr.x, rbr.x, rbl.x);
-  const minY = Math.min(tl.y, rtr.y, rbr.y, rbl.y);
-  const maxY = Math.max(tl.y, rtr.y, rbr.y, rbl.y);
-  return {
-    left: minX,
-    top: minY,
-    width: maxX - minX,
-    height: maxY - minY,
-  };
+  const points = getPoints(rect, angle);
+  return pointsToBBox(points);
 }
 
-function rotatePoint(p, p0, rad) {
-  const { x, y } = p;
-  const { x: x0, y: y0 } = p0;
-  return {
-    x: (x - x0) * cos(rad) - (y - y0) * sin(rad) + x0,
-    y: (x - x0) * sin(rad) + (y - y0) * cos(rad) + y0,
-  };
+export function isRotatedRectIntersect(rect1, angle1, rect2, angle2) {
+  if (angle1 === 0 && angle2 === 0) {
+    return isRectIntersect(rect1, rect2);
+  }
+
+  // 按rect1的边投影
+  let points2 = getPoints(rect2, angle2);
+  if (angle1 !== 0) {
+    const origin1 = { x: rect1.left, y: rect1.top };
+    const radians2 = degreeToRadian(angle2 - angle1);
+    const tl2 = rotatePoint(points2.tl, origin1, radians2);
+    const tr2 = rotatePoint(points2.tr, origin1, radians2);
+    const br2 = rotatePoint(points2.br, origin1, radians2);
+    const bl2 = rotatePoint(points2.bl, origin1, radians2);
+    points2 = { tl: tl2, tr: tr2, br: br2, bl: bl2 };
+  }
+  const bbox2 = pointsToBBox(points2);
+  if (!isRectIntersect(rect1, bbox2)) {
+    return false;
+  }
+
+  // 按rect2的边投影
+  let points1 = getPoints(rect1, angle1);
+  if (angle2 !== 0) {
+    const origin2 = { x: rect2.left, y: rect2.top };
+    const radians1 = degreeToRadian(angle1 - angle2);
+    const tl1 = rotatePoint(points1.tl, origin2, radians1);
+    const tr1 = rotatePoint(points1.tr, origin2, radians1);
+    const br1 = rotatePoint(points1.br, origin2, radians1);
+    const bl1 = rotatePoint(points1.bl, origin2, radians1);
+    points1 = { tl: tl1, tr: tr1, br: br1, bl: bl1 };
+  }
+  const bbox1 = pointsToBBox(points1);
+  if (!isRectIntersect(rect2, bbox1)) {
+    return false;
+  }
+
+  return true;
+}
+
+export function isRectIntersect(rect1, rect2) {
+  return rect1.left <= rect2.left + rect2.width
+    && rect1.left + rect1.width >= rect2.left
+    && rect1.top <= rect2.top + rect2.height
+    && rect1.top + rect1.height >= rect2.top;
 }
