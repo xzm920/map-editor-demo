@@ -1,3 +1,4 @@
+import { fabric } from "fabric";
 import { getBBox, isRectInRect } from "../../geometry";
 
 export class ToolSelect {
@@ -21,16 +22,14 @@ export class ToolSelect {
     let selectedStartPos = null;
 
     const handleMouseDown = (e) => {
-      if (e.transform && e.transform.action !== 'drag') {
-        return;
-      }
+      if (e.transform && e.transform.action !== 'drag') return;
+      
+      if (e.target instanceof fabric.IText && e.target.isEditing) return;
 
       startPoint = e.absolutePointer;
       this.selection.selectByPoint(startPoint, e.e.shiftKey);
 
-      if (this.selection.isEmpty || e.e.shiftKey) {
-        return;
-      }
+      if (this.selection.isEmpty || e.e.shiftKey) return;
 
       isPanning = true;
       const activeObject = this.mapCanvas.canvas.getActiveObject();
@@ -42,6 +41,10 @@ export class ToolSelect {
 
       const movePoint = e.absolutePointer;
       this.selection.move(movePoint, startPoint, selectedStartPos);
+      // 保证移动选中的文字松开后，文字不会进入编辑状态。见 https://github.com/fabricjs/fabric.js/blob/4c305baae69fd998e783195fd23453fd05187e5a/src/mixins/itext_click_behavior.mixin.js#L156
+      if (e.transform) {
+        e.transform.actionPerformed = true;
+      }
     };
 
     const handleMouseUp = (e) => {
@@ -78,25 +81,55 @@ export class ToolSelect {
         mapItem.rotate(target.angle, target.left, target.top);
       } else if (action === 'resizing') {
         mapItem.resize(target.left, target.top, target.width, target.height);
-      } else if (target.type === 'textbox') {
-        mapItem.setText(target.text, target.height);
       }
     };
     
-    const handleObjectScaling = (e) => {
+    const handleObjectScaling = () => {
       // TODO: 
     };
 
-    const handleObjectRotating = (e) => {
+    const handleObjectRotating = () => {
       // TODO:
     };
 
-    const handleObjectResizing = (e) => {
+    const handleObjectResizing = () => {
       // TODO:
     }
 
+    let isNewText = false;
+
+    const handleTextEditingEntered = (e) => {
+      const textObject = e.target;
+      const textView = this.mapCanvas.getViewByObject(textObject);
+      const text = textView.model;
+      isNewText = text.text === '';
+      this.mapEditor.startBatch();
+    };
+
     const handleTextChanged = (e) => {
-      // TODO:
+      const textObject = e.target;
+      const textView = this.mapCanvas.getViewByObject(textObject);
+      const text = textView.model;
+      text.setText(textObject.text, textObject.height);
+    };
+
+    const handleTextEditingExited = (e) => {
+      const textObject = e.target;
+      const textView = this.mapCanvas.getViewByObject(textObject);
+      const text = textView.model;
+      if (textObject.text === '') {
+        // 等待完全退出编辑状态，再删除文字
+        setTimeout(() => {
+          this.mapContainer.remove(text);
+          if (isNewText) {
+            this.mapEditor.abortBatch();
+          } else {
+            this.mapEditor.stopBatch();
+          }
+        }, 0);
+      } else {
+        this.mapEditor.stopBatch();
+      }
     };
 
     const handleContextMenu = (e) => {
@@ -121,6 +154,8 @@ export class ToolSelect {
     this.mapCanvas.canvas.on('object:rotating', handleObjectRotating);
     this.mapCanvas.canvas.on('object:resizing', handleObjectResizing);
     this.mapCanvas.canvas.on('text:changed', handleTextChanged);
+    this.mapCanvas.canvas.on('text:editing:entered', handleTextEditingEntered);
+    this.mapCanvas.canvas.on('text:editing:exited', handleTextEditingExited);
     this.mapCanvas.canvas.upperCanvasEl.addEventListener('contextmenu', handleContextMenu);
 
     return () => {
@@ -132,6 +167,8 @@ export class ToolSelect {
       this.mapCanvas.canvas.on('object:rotating', handleObjectRotating);
       this.mapCanvas.canvas.off('object:resizing', handleObjectResizing);
       this.mapCanvas.canvas.off('text:changed', handleTextChanged);
+      this.mapCanvas.canvas.off('text:editing:exited', handleTextEditingExited);
+      this.mapCanvas.canvas.on('text:editing:entered', handleTextEditingEntered);
       this.mapCanvas.canvas.upperCanvasEl.removeEventListener('contextmenu', handleContextMenu);
     };
   }

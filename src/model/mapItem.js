@@ -1,6 +1,6 @@
 import { DEFAULT_TEXT_COLOR, DEFAULT_FONT_SIZE, LAYER, MAP_ITEM_TYPE, USER_LAYER, DEFAULT_TEXT_ALIGN, TILE_SIZE } from "../constants";
 import { patchToChanges, uuid } from "../utils";
-import { getBBox, isRectInRect } from '../geometry';
+import { getBBox } from '../geometry';
 
 export class MapItem {
   // FIXME:
@@ -75,7 +75,7 @@ export class MapItem {
     }
   }
 
-  update(patch, reason) {
+  update(patch, merge = false) {
     this.notify('before:modelChange');
     const changes = patchToChanges(this, patch);
     Object.assign(this, patch);
@@ -84,8 +84,10 @@ export class MapItem {
       item: this,
       patch,
       changes,
-      reason,
     };
+    if (merge) {
+      data.merge = true;
+    }
     this.notify('update', data);
   }
 
@@ -213,7 +215,7 @@ export class MapImage extends MapItem {
   }
 
   setOpacity(opacity) {
-    this.update({ opacity });
+    this.update({ opacity }, true);
   }
 
   scaleFlip(left, top, width, height, flipX, flipY) {
@@ -269,19 +271,19 @@ export class MapText extends MapItem {
   }
 
   setText(text, height) {
-    this.update({ text, height });
+    this.update({ text, height }, true);
   }
 
   setOpacity(opacity) {
-    this.update({ opacity });
+    this.update({ opacity }, true);
   }
 
   setFontSize(fontSize) {
-    this.update({ fontSize });
+    this.update({ fontSize }, true);
   }
 
   setColor(color) {
-    this.update({ color });
+    this.update({ color }, true);
   }
 
   setItalic(isItalic) {
@@ -301,7 +303,7 @@ export class MapText extends MapItem {
   }
 
   setLineHeight(lineHeight) {
-    this.update({ lineHeight });
+    this.update({ lineHeight }, true);
   }
 
   levelUpAbove(item) {

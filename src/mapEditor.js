@@ -1,13 +1,10 @@
 import { MapContainer } from './model/mapContainer';
 import { MapCanvas } from './view/mapCanvas';
-import { HistoryManager } from './controller/history/historyManager';
+import { HistoryManager } from './controller/history';
 import { EventEmitter } from './eventEmitter';
-import { ToolSelect } from './controller/tool/toolSelect';
 import { Selection } from './controller/selection';
-import { ToolManager } from './controller/tool/toolManager';
 import { TOOL } from './constants';
-import { ToolHand } from './controller/tool/toolHand';
-import { ToolErase } from './controller/tool/toolErase';
+import { ToolManager, ToolErase, ToolHand, ToolSelect, ToolText } from './controller/tool';
 
 export class MapEditor extends EventEmitter {
   constructor(options) {
@@ -37,6 +34,7 @@ export class MapEditor extends EventEmitter {
     this.toolManager.registerTool(TOOL.select, ToolSelect);
     this.toolManager.registerTool(TOOL.hand, ToolHand);
     this.toolManager.registerTool(TOOL.erase, ToolErase);
+    this.toolManager.registerTool(TOOL.text, ToolText);
     this.toolManager.invokeTool(TOOL.select);
 
     this._unlisten = this._listen();
@@ -140,6 +138,18 @@ export class MapEditor extends EventEmitter {
 
   redo() {
     this.history.redo();
+  }
+
+  startBatch() {
+    this.history.startBatch();
+  }
+
+  stopBatch() {
+    this.history.stopBatch();
+  }
+
+  abortBatch() {
+    this.history.abortBatch();
   }
 
   add(mapItem) {

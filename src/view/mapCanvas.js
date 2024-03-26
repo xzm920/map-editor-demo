@@ -339,48 +339,35 @@ export class MapCanvas extends EventEmitter {
     this.render();
   }
 
+  moveSelected(left, top) {
+    const active = this.canvas.getActiveObject();
+    active.set({ left, top });
+    this.canvas.requestRenderAll();
+  }
+
   select(items) {
-    this.canvas.discardActiveObject();
     const itemViews = items.map((item) => this.getItemView(item)).filter((v) => v != null);
+    if (itemViews.length === 0) return;
+    
     const objects = itemViews.map((view) => view.object).filter((v) => v != null);
+    if (objects.length === 0) return;
+    
+    const active = this.canvas.getActiveObject();
+    if (active && active.type === 'activeSelection') {
+      this.canvas.discardActiveObject();
+    }
+    
     if (objects.length === 1) {
-      if (objects[0]) this.canvas.setActiveObject(objects[0]);
-    } else if (objects.length === 2) {
-      const activeSelection = this._createActiveSelection(objects);
-      this.canvas.setActiveObject(activeSelection);
+      this.canvas.setActiveObject(objects[0]);
+    } else if (objects.length > 1) {
+      this.canvas.setActiveObject(this._createActiveSelection(objects));
     }
     this.canvas.requestRenderAll();
   }
 
   unselect() {
+    // debugger;
     this.canvas.discardActiveObject();
-    this.canvas.requestRenderAll();
-  }
-
-  addToSelection(mapItem) {
-    const itemView = this.getItemView(mapItem);
-    const active = this.canvas.getActiveObject();
-    if (!itemView.object || !active) return;
-
-    if (active.type === 'activeSelection') {
-      active.addWithUpdate(itemView.object);
-    } else {
-      const activeSelection = this._createActiveSelection([active, itemView.object]);
-      this.canvas.setActiveObject(activeSelection);
-    }
-    this.canvas.requestRenderAll();
-  }
-
-  removeFromSelection(mapItem) {
-    const itemView = this.getItemView(mapItem);
-    const active = this.canvas.getActiveObject();
-    if (!itemView.object || !active) return;
-
-    if (active.type === 'activeSelection') {
-      active.removeWithUpdate(itemView.object);
-    } else {
-      this.canvas.discardActiveObject();
-    }
     this.canvas.requestRenderAll();
   }
 

@@ -1,7 +1,7 @@
 import { clamp } from "lodash";
-import { LAYER, DESC_NON_EFFECT_LAYERS, TILE_SIZE } from "../constants";
+import { LAYER, DESC_NON_EFFECT_LAYERS, TILE_SIZE, MAP_ITEM_TYPE } from "../constants";
 import { getBBox, isPointInRect, isPointInRotatedRect } from "../geometry";
-import { getRectOffsetToClosestTile, toTiledPoint } from "../utils";
+import { getRectOffsetToClosestTile, shallowEqual, toIntegerPoint, toTiledPoint } from "../utils";
 
 export class Selection {
   constructor(mapEditor) {
@@ -48,79 +48,77 @@ export class Selection {
     if (shiftKey) {
       this._shiftSelect(mapItem);
     } else {
-      this.select([mapItem]);
+      this.select(mapItem);
     }
   }
 
   select(items) {
+    if (!Array.isArray(items)) {
+      items = [items];
+    }
+
+    if (items.length === 0) return;
+
+    if (shallowEqual(items, this.items)) return;
+
     this.items = items;
     this.bbox = this._getBBox();
-
-    this.mapCanvas.select(this.items);
-    this.mapEditor.emit('selected', { items: this.items });
-  }
-
-  _shiftSelect(item) {
-    const index = this.items.indexOf(item);
-    if (index === -1) {
-      if (this.items.length === 0) {
-        this.items = [item];
-        this.mapCanvas.select(this.items);
-      } else {
-        this.items.push(item);
-        this.mapCanvas.addToSelection(item);
-      }
-    } else {
-      if (this.items.length === 1) {
-        this.items = [];
-        this.mapCanvas.unselect();
-      } else {
-        this.items.splice(index, 1);
-        this.mapCanvas.removeFromSelection(item);
-      }
-    }
-    this.bbox = this._getBBox();
-
-    if (this.items.length > 0) {
-      this.mapEditor.emit('selected', { items: this.items });
-    } else {
-      this.mapEditor.emit('unselected');
-    }
+    this.mapCanvas.select(items);
+    this.mapEditor.emit('selected', { items });
   }
 
   unselect() {
+    if (this.isEmpty) return;
+
     this.items = [];
     this.bbox = this._getBBox();
-
     this.mapCanvas.unselect();
     this.mapEditor.emit('unselected');
+  }
+
+  _shiftSelect(item) {
+    const items = [...this.items];
+    const index = items.indexOf(item);
+    if (index === -1) {
+      items.push(item);
+    } else {
+      items.splice(index, 1);
+    }
+
+    if (items.length === 0) {
+      this.unselect();
+    } else {
+      this.select(items);
+    }
   }
 
   move(movePoint, startPoint, selectedStartPos) {
     const { movementX, movementY } = this._getMovement(movePoint, startPoint);
     if (movementX === 0 && movementY === 0) return;
 
-    // TODO:
-    const activeObject = this.mapCanvas.canvas.getActiveObject();
-    activeObject.set({
-      left: selectedStartPos.left + movementX,
-      top: selectedStartPos.top + movementY,
-    });
-    this.mapCanvas.canvas.requestRenderAll();
+    const left = selectedStartPos.left + movementX;
+    const top = selectedStartPos.top + movementY;
+    this.mapCanvas.moveSelected(left, top);
   }
 
   finishMove(upPoint, startPoint) {
     const { movementX, movementY } = this._getMovement(upPoint, startPoint);
     if (movementX === 0 && movementY === 0) return;
     
-    this.mapCanvas.unselect();
+    if (this.items.length > 1) {
+      this.mapCanvas.unselect();
+    }
+    
     this._isBusy = true;
     this.items.forEach((item) => {
       item.move(item.left + movementX, item.top + movementY);
     });
     this._isBusy = false;
     this.bbox = this._getBBox();
-    this.mapCanvas.select(this.items);
+
+    if (this.items.length > 1) {
+      this.mapCanvas.select(this.items);
+    }
   }
 
   _getBBox() {
@@ -139,8 +137,8 @@ export class Selection {
   }
 
   _getMovement(movePoint, startPoint) {
-    movePoint = { x: Math.round(movePoint.x), y: Math.round(movePoint.y) };
-    startPoint = { x: Math.round(startPoint.x), y: Math.round(startPoint.y) };
+    movePoint = toIntegerPoint(movePoint);
+    startPoint = toIntegerPoint(startPoint);
 
     if (movePoint.x === startPoint.x && movePoint.y === startPoint.y) {
       return { movementX: 0, movementY: 0 };
@@ -179,22 +177,31 @@ export class Selection {
   }
 
   _listen() {
-    const handleModelChange = (type, eventData) => {
+    // TODO: 观察有没有性能问题
+    const handleModelChange = (type) => {
       if (this._isBusy) return;
       if (this.isEmpty) return;
 
-      const inSelection = this.items.some((item) => this.mapContainer.has(item));
-      if (inSelection) {
+      const items = this.items.filter((item) => this.mapContainer.has(item));
+      if (items.length === 1 && items[0].type === MAP_ITEM_TYPE.text) {
+        const textView = this.mapCanvas.getItemView(items[0]);
+        if (textView.isEditing) {
+          return;
+        }
+      }
+
+      if (items.length === 0) {
+        this.unselect();
+      } else {
         if (type === 'before:modelChange') {
           this.mapCanvas.unselect();
         } else {
-          const items = this.items.filter((item) => this.mapContainer.has(item));
-          if (items.length) {
+          if (shallowEqual(items, this.items)) {
+            this.mapCanvas.select(items);
+          } else {
             this.select(items);
           }
         }
-      } else {
-        this.unselect();
       }
     };
     this.mapContainer.on('*', handleModelChange);

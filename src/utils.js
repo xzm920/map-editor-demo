@@ -26,6 +26,37 @@ export function fetchImage(url) {
   });
 }
 
+// Copy from https://github.com/facebook/fbjs/blob/main/packages/fbjs/src/core/shallowEqual.js
+export function shallowEqual(objA, objB) {
+  if (Object.is(objA, objB)) {
+    return true;
+  }
+  
+  if (typeof objA !== 'object' || objA === null ||
+      typeof objB !== 'object' || objB === null) {
+    return false;
+  }
+  
+  const keysA = Object.keys(objA);
+  const keysB = Object.keys(objB);
+
+  if (keysA.length !== keysB.length) {
+    return false;
+  }
+  
+  for (let i = 0; i < keysA.length; i++) {
+    if (
+      !Object.prototype.hasOwnProperty.call(objB, keysA[i]) ||
+      !Object.is(objA[keysA[i]], objB[keysA[i]])
+    ) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+// TODO: move geometry related util functions to geometry.js
 export function toTiledPoint(point) {
   return {
     x: toTiledCoord(point.x),
@@ -59,8 +90,21 @@ function getOffsetToClosedTile(coord) {
     : offsetToHighTile;
 }
 
+export function clampRectInRect(rect1, rect2) {
+  const left = clamp(rect1.left, rect2.left, rect2.left + rect2.width - rect1.width);
+  const top = clamp(rect1.top, rect2.top, rect2.top + rect2.height - rect1.height);
+  return { left, top, width: rect1.width, height: rect1.height };
+}
+
 export function clampTileInRect(point, rect2) {
   const x = clamp(point.x, rect2.left, rect2.left + rect2.width - TILE_SIZE);
   const y = clamp(point.y, rect2.top, rect2.top + rect2.height - TILE_SIZE);
   return { x, y };
+}
+
+export function toIntegerPoint(point) {
+  return {
+    x: Math.round(point.x),
+    y: Math.round(point.y),
+  };
 }

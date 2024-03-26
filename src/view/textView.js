@@ -59,6 +59,18 @@ export class TextView {
     this.updateObject(this.model);
     this.parent?.onUpdate();
   }
+
+  get isEditing() {
+    return this.object.isEditing;
+  }
+
+  enterEditing() {
+    this.object.enterEditing();
+  }
+
+  exitEditing() {
+    this.object.exitEditing();
+  }
 }
 
 function transformItalic(isItalic) {

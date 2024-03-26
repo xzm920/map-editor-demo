@@ -68,4 +68,5 @@ export const TOOL = {
   select: 'select',
   hand: 'hand',
   erase: 'erase',
+  text: 'text',
 };

@@ -1,8 +1,23 @@
 export class UpdateCommand {
-  constructor(item, changes, reason) {
+  constructor(item, changes, merge = false) {
     this.item = item;
     this.changes = changes;
-    this.reason = reason;
+    this.merge = merge;
+  }
+
+  mergeCommand(nextCommand) {
+    const changesMap = this.changes.reduce((map, item) => {
+      map[item.key] = item;
+      return map;
+    }, {});
+
+    for (let change of nextCommand.changes) {
+      if (change.key in changesMap) {
+        changesMap[change.key].next = change.next;
+      } else {
+        this.changes.push(change);
+      }
+    }
   }
 
   execute() {
@@ -10,7 +25,7 @@ export class UpdateCommand {
     for (const { key, next } of this.changes) {
       patch[key] = next;
     }
-    this.item.update(patch, this.reason);
+    this.item.update(patch);
   }
 
   undo() {
@@ -18,6 +33,6 @@ export class UpdateCommand {
     for (const { key, prev } of this.changes) {
       inversePatch[key] = prev;
     }
-    this.item.update(inversePatch, this.reason);
+    this.item.update(inversePatch);
   }
 }

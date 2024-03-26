@@ -1,4 +1,5 @@
 import { EventEmitter } from '../../eventEmitter';
+import { shallowEqual } from '../../utils';
 import { AddCommand } from './addCommand';
 import { RemoveCommand } from './removeCommand';
 import { SortItemCommand } from './sortItemCommand';
@@ -9,13 +10,15 @@ export class HistoryManager extends EventEmitter {
   constructor(mapContainer) {
     super();
     
-
     this.mapContainer = mapContainer;
-    this.maxUndoTimes = 100;
+    // this.maxUndoTimes = 100;
     this.undoStack = [];
     this.redoStack = [];
-    this.stackItem = [];
-    this.ignoreModelEvent = false;
+    this._isBatching = false;
+    this._batchCommands = [];
+    this.mergeThreshold = 1000;
+    this._lastCommandTime = null;
+    this._isBusy = false;
 
     this._unlisten = this._listen();
   }
@@ -27,38 +30,38 @@ export class HistoryManager extends EventEmitter {
   _listen() {
     const handleAdd = ({ mapItem }) => {
       // 在执行 undo/redo 的过程中不响应来自 model 的事件，避免发生循环调用
-      if (this.ignoreModelEvent) return;
+      if (this._isBusy) return;
   
       const command = new AddCommand(this.mapContainer, mapItem);
-      this.pushCommand(command);
+      this._pushCommand(command);
     };
 
     const handleRemove = ({ mapItem }) => {
-      if (this.ignoreModelEvent) return;
+      if (this._isBusy) return;
   
       const command = new RemoveCommand(this.mapContainer, mapItem);
-      this.pushCommand(command);
+      this._pushCommand(command);
     };
 
-    const handleUpdate = ({ item, changes, reason }) => {
-      if (this.ignoreModelEvent) return;
+    const handleUpdate = ({ item, changes, merge }) => {
+      if (this._isBusy) return;
 
-      const command = new UpdateCommand(item, changes, reason);
-      this.pushCommand(command);
+      const command = new UpdateCommand(item, changes, merge);
+      this._pushCommand(command);
     };
 
     const handleSortItem = ({ mapLayer, mapItem, oldZOrder, newZOrder }) => {
-      if (this.ignoreModelEvent) return;
+      if (this._isBusy) return;
 
       const command = new SortItemCommand(mapLayer, mapItem, oldZOrder, newZOrder);
-      this.pushCommand(command);
+      this._pushCommand(command);
     };
 
     const handleToggleMaskPlayer = ({ mapContainer, mapItem, oldZOrder, newZOrder }) => {
-      if (this.ignoreModelEvent) return;
+      if (this._isBusy) return;
 
       const command = new ToggleMaskPlayerCommand(mapContainer, mapItem, oldZOrder, newZOrder);
-      this.pushCommand(command);
+      this._pushCommand(command);
     };
 
     this.mapContainer.on('add', handleAdd);
@@ -76,58 +79,110 @@ export class HistoryManager extends EventEmitter {
     };
   }
 
-  canUndo() {
-    return this.undoStack.length > 0;
+  _isBatchCommand(command) {
+    return Array.isArray(command);
   }
 
-  undo() {
-    const stackItem = this.undoStack.pop();
-    if (!stackItem) return;
-
-    this.ignoreModelEvent = true;
-    for (const command of stackItem) {
-      command.undo();
-    }
-    this.redoStack.push(stackItem);
-    this.ignoreModelEvent = false;
-    this.emit('history');
+  canUndo() {
+    return this.undoStack.length > 0 && !this._isBatching;
   }
 
   canRedo() {
-    return this.redoStack.length > 0;
+    return this.redoStack.length > 0 && !this._isBatching;
   }
 
-  redo() {
-    const stackItem = this.redoStack.pop();
-    if (!stackItem) return;
+  undo() {
+    const command = this.undoStack.pop();
+    if (!command) return;
 
-    this.ignoreModelEvent = true;
-    for (const command of stackItem) {
-      command.execute();
+    this._isBusy = true;
+    if (this._isBatchCommand(command)) {
+      for (const subCommand of command) {
+        subCommand.undo();
+      }
+    } else {
+      command.undo();
     }
-    this.undoStack.push(stackItem);
-    this.ignoreModelEvent = false;
+    this.redoStack.push(command);
+    this._isBusy = false;
     this.emit('history');
   }
 
-  pushCommand(command) {
-    this.stackItem.push(command);
-    if (this.batchScheduled) return;
-    
-    this.batchScheduled = true;
-    Promise.resolve().then(() => {
-      this.batchScheduled = false;
-      this.pushStackItem(this.stackItem);
-      this.stackItem = [];
-      this.emit('history');
-    });
+  redo() {
+    const command = this.redoStack.pop();
+    if (!command) return;
+
+    this._isBusy = true;
+    if (this._isBatchCommand(command)) {
+      for (const subCommand of command) {
+        subCommand.execute();
+      }
+    } else {
+      command.execute();
+    }
+    this.undoStack.push(command);
+    this._isBusy = false;
+    this.emit('history');
   }
 
-  pushStackItem(stackItem) {
-    // 避免 push 空数组到 undoStack
-    if (stackItem.length > 0) {
+  _pushCommand(command) {
+    const currentStack = this._isBatching ? this._batchCommands : this.undoStack;
+
+    // 处理合并
+    const prevCommand = currentStack[currentStack.length - 1];
+    if (prevCommand && this._shouldMerge(prevCommand, command)) {
+      prevCommand.mergeCommand(command);
+      this._lastCommandTime = Date.now();
+      return;
+    }
+
+    currentStack.push(command);
+    this._lastCommandTime = Date.now();
+  }
+
+  _shouldMerge(prevCommand, command) {
+    return (this._isBatching || Date.now() - this._lastCommandTime <= this.mergeThreshold)
+      && prevCommand instanceof UpdateCommand
+      && command instanceof UpdateCommand
+      && prevCommand.merge
+      && command.merge
+      && prevCommand.item === command.item
+      && shallowEqual(
+        prevCommand.changes.map((v) => v.key),
+        command.changes.map((v) => v.key)
+      );
+  }
+
+  _flushBatchCommands() {
+    if (this._batchCommands.length > 0) {
       this.redoStack = [];
-      this.undoStack.push(stackItem);
+      this.undoStack.push(this._batchCommands);
+      this._batchCommands = [];
+      this.emit('history');
+    }
+  }
+
+  // 不支持嵌套调用
+  startBatch() {
+    if (!this._isBatching) {
+      this._isBatching = true;
+      this.emit('history');
+    }
+  }
+
+  stopBatch() {
+    if (this._isBatching) {
+      this._isBatching = false;
+      this._flushBatchCommands();
+      this.emit('history');
+    }
+  }
+
+  abortBatch() {
+    if (this._isBatching) {
+      this._isBatching = false;
+      this._batchCommands = [];
+      this.emit('history');
     }
   }
 }

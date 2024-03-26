@@ -1,7 +1,7 @@
 /* eslint-disable react/prop-types */
 import { useEffect, useRef, useState } from "react";
 import { Checkbox, ColorPicker, ConfigProvider, InputNumber, Slider } from "antd";
-import { AlignCenterOutlined, AlignLeftOutlined, AlignRightOutlined, BoldOutlined, ExpandOutlined, ItalicOutlined, MinusOutlined, PlusOutlined, RedoOutlined, UnderlineOutlined, UndoOutlined } from '@ant-design/icons';
+import { AlignCenterOutlined, AlignLeftOutlined, AlignRightOutlined, BoldOutlined, ExpandOutlined, ItalicOutlined, MinusOutlined, PlusOutlined, UnderlineOutlined } from '@ant-design/icons';
 import { throttle } from "lodash";
 import { MapEditor } from "./mapEditor";
 import { materials } from "../mock/materials";
@@ -44,6 +44,7 @@ function App() {
     editorRef.current = mapEditor;
 
     setTimeout(() => {
+      mapEditor.startBatch();
       for (let i = 0; i < 5; i++) {
         for (let j = 0; j < 5; j++) {
           const floor = createMapItemFromMaterial(materials.floor, j * TILE_SIZE, i * TILE_SIZE);
@@ -74,11 +75,12 @@ function App() {
       mapEditor.model.add(spawn);
       const impassable1 = createMapItemFromMaterial(materials.impassable, 4 * TILE_SIZE, 3 * TILE_SIZE);
       mapEditor.model.add(impassable1);
-      const text1 = createText('Hello!', 500, 64);
+      const text1 = createText('Hello!', 500, 64, 100, 28);
       mapEditor.model.add(text1);
       const backgroundImage = createBackgroundImageFromResource(resources.backgroundImage, 0, 0);
       backgroundImage.scale(0, 0, 960, 640);
       mapEditor.model.add(backgroundImage);
+      mapEditor.stopBatch();
 
       mapEditor.zoomToFit();
       setZoom(mapEditor.zoom);
@@ -146,7 +148,7 @@ function App() {
     };
     mapEditor.on('toggleMaskPlayer', handleToggleMaskPlayer);
 
-    const handleContextMenu = ({ mapItem, position }) => {
+    const handleContextMenu = ({ position }) => {
       setShowContextMenu(true);
       setContextMenuPosition(position);
     };
@@ -265,6 +267,11 @@ function App() {
               active={tool === TOOL.erase}
               onClick={() => invokeTool(TOOL.erase)}
             />
+            <IconButton
+              icon={<Icon name={TOOL.text} />}
+              active={tool === TOOL.text}
+              onClick={() => invokeTool(TOOL.text)}
+            />
           </div>
           <div>地图编辑器 Demo</div>
           <div>
@@ -382,7 +389,11 @@ function TiledDetail({ mapItem, mapItemRef }) {
 }
 
 function ImageDetail({ mapItem, mapItemRef }) {
-  const [opacity, setOpacity] = useState(mapItem.opacity * 100);
+  const opacity = mapItem.opacity * 100;
+
+  const handleOpacityChange = (val) => {
+    mapItemRef.current.setOpacity(val / 100);
+  };
 
   return (
     <div className="detail">
@@ -397,10 +408,7 @@ function ImageDetail({ mapItem, mapItemRef }) {
         <div>
           <Slider
             value={opacity}
-            onChange={setOpacity}
-            onChangeComplete={(val) => {
-              mapItemRef.current.setOpacity(val / 100);
-            }}
+            onChange={handleOpacityChange}
           />
         </div>
       </div>
@@ -418,7 +426,11 @@ function ImageDetail({ mapItem, mapItemRef }) {
 }
 
 function TextDetail({ mapItem, mapItemRef }) {
-  const [opacity, setOpacity] = useState(mapItem.opacity * 100);
+  const opacity = mapItem.opacity * 100;
+  
+  const handleOpacityChange = (val) => {
+    mapItemRef.current.setOpacity(val / 100);
+  };
 
   return (
     <div className="detail">
@@ -427,10 +439,7 @@ function TextDetail({ mapItem, mapItemRef }) {
         <div>
           <Slider
             value={opacity}
-            onChange={setOpacity}  
-            onChangeComplete={(val) => {
-              mapItemRef.current.setOpacity(val / 100);
-            }}
+            onChange={handleOpacityChange}
           />
         </div>
       </div>

@@ -37,13 +37,13 @@ export function createBackgroundImageFromResource(resource, left, top) {
   });
 }
 
-export function createText(text, left, top) {
+export function createText(text, left, top, width, height) {
   return new MapText({
     text,
     left,
     top,
-    width: 100,
-    height: 27,
+    width,
+    height,
     isMaskPlayer: false,
     isCollider: false,
   });
