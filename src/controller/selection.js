@@ -1,5 +1,5 @@
 import { clamp } from "lodash";
-import { LAYER, NON_EFFECT_LAYERS, TILE_SIZE } from "../constants";
+import { LAYER, DESC_NON_EFFECT_LAYERS, TILE_SIZE } from "../constants";
 import { getBBox, isPointInRect, isPointInRotatedRect } from "../geometry";
 import { getRectOffsetToClosestTile, toTiledPoint } from "../utils";
 
@@ -38,8 +38,8 @@ export class Selection {
       if (clickSelected) return;
     }
 
-    const layers = this.mapCanvas.showMask ? [LAYER.effect] : NON_EFFECT_LAYERS;
-    const mapItem = this.mapContainer.getItemByPoint(point, layers);
+    const descLayers = this.mapCanvas.showMask ? [LAYER.effect] : DESC_NON_EFFECT_LAYERS;
+    const mapItem = this.mapContainer.getItemByPoint(point, descLayers);
     if (!mapItem) {
       this.unselect();
       return;

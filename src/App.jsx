@@ -6,9 +6,11 @@ import { throttle } from "lodash";
 import { MapEditor } from "./mapEditor";
 import { materials } from "../mock/materials";
 import { resources } from '../mock/resources';
-import { MAP_ITEM_TYPE, TEXT_ALIGN, TILE_SIZE } from "./constants";
+import { MAP_ITEM_TYPE, TEXT_ALIGN, TILE_SIZE, TOOL } from "./constants";
 import { createBackgroundImageFromResource, createMapItemFromMaterial, createText } from "./model/create";
 import { createPortal } from "react-dom";
+import { Icon } from "./Icon";
+import { IconButton } from "./IconButton";
 
 function App() {
   const canvasWrapper = useRef();
@@ -23,6 +25,7 @@ function App() {
   const mapItemRef = useRef(null);
   const [showContextMenu, setShowContextMenu] = useState(false);
   const [contextMenuPosition, setContextMenuPosition] = useState(null);
+  const [tool, setTool] = useState(null);
 
   const canZoomIn = editorRef.current ? zoom < editorRef.current.maxZoom : false;
   const canZoomOut = editorRef.current ? zoom > editorRef.current.minZoom : false;
@@ -84,6 +87,7 @@ function App() {
       setAlignTile(mapEditor.alignTile);
       setCanUndo(mapEditor.canUndo);
       setCanRedo(mapEditor.canRedo);
+      setTool(mapEditor.currentTool);
     });
     // debug
     window.mapEditor = mapEditor;
@@ -154,6 +158,11 @@ function App() {
     }, 300, { trailing: true });
     window.addEventListener('resize', handleResize);
 
+    const handleToolChange = ({ tool }) => {
+      setTool(tool);
+    };
+    mapEditor.on('toolChange', handleToolChange);
+
     return () => {
       mapEditor.off('zoom', handleZoom);
       mapEditor.off('toggleMask', handleToggleMask);
@@ -166,6 +175,7 @@ function App() {
       mapEditor.off('toggleMaskPlayer', handleToggleMaskPlayer);
       mapEditor.off('contextMenu', handleContextMenu);
       window.removeEventListener('resize', handleResize);
+      mapEditor.off('toolChange', handleToolChange);
       mapEditor.dispose();
     };
   }, []);
@@ -215,6 +225,10 @@ function App() {
     mapEditor.redo();
   };
 
+  const invokeTool = (tool) => {
+    editorRef.current.invokeTool(tool);
+  };
+
   return (
     <ConfigProvider
       theme={{
@@ -225,12 +239,31 @@ function App() {
     >
       <div className="app">
         <div className="head">
-          <div>
-            <UndoControl
-              undoDisabled={!canUndo}
-              redoDisabled={!canRedo}
-              onUndo={handleUndo}
-              onRedo={handleRedo}
+          <div className="head-left">
+            <IconButton
+              icon={<Icon name="undo" />}
+              disabled={!canUndo}
+              onClick={handleUndo}
+            />
+            <IconButton
+              icon={<Icon name="redo" />}
+              disabled={!canRedo}
+              onClick={handleRedo}
+            />
+            <IconButton
+              icon={<Icon name={TOOL.select} />}
+              active={tool === TOOL.select}
+              onClick={() => invokeTool(TOOL.select)}
+            />
+            <IconButton
+              icon={<Icon name={TOOL.hand} />}
+              active={tool === TOOL.hand}
+              onClick={() => invokeTool(TOOL.hand)}
+            />
+            <IconButton
+              icon={<Icon name={TOOL.erase} />}
+              active={tool === TOOL.erase}
+              onClick={() => invokeTool(TOOL.erase)}
             />
           </div>
           <div>地图编辑器 Demo</div>
@@ -250,6 +283,7 @@ function App() {
               onShowEffectChange={handleShowEffectChange}
               alignTile={alignTile}
               onAlignTileChange={handleAlignTileChange}
+              alignTileVisible={tool === TOOL.select}
             />
             <ZoomControl
               zoom={zoom}
@@ -298,20 +332,11 @@ function ZoomControl({ zoom, onZoomFit, onZoomIn, onZoomOut, zoomInDisabled, zoo
   );
 }
 
-function ViewControl({ showEffect, showEffectDisabled, onShowEffectChange, alignTile, onAlignTileChange }) {
+function ViewControl({ showEffect, showEffectDisabled, onShowEffectChange, alignTile, onAlignTileChange, alignTileVisible }) {
   return (
     <div className="view-control">
       <Checkbox checked={showEffect} disabled={showEffectDisabled} onChange={onShowEffectChange}>始终显示效果</Checkbox>
-      <Checkbox checked={alignTile} onChange={onAlignTileChange}>自动对齐方格</Checkbox>
-    </div>
-  );
-}
-
-function UndoControl({ undoDisabled, redoDisabled, onUndo, onRedo }) {
-  return (
-    <div className="undo-control">
-      <UndoOutlined className={`icon ${undoDisabled ? 'disabled' : ''}`} onClick={onUndo} />
-      <RedoOutlined className={`icon ${redoDisabled ? 'disabled' : ''}`} onClick={onRedo} />
+      {alignTileVisible && <Checkbox checked={alignTile} onChange={onAlignTileChange}>自动对齐方格</Checkbox>}
     </div>
   );
 }

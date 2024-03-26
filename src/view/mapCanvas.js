@@ -3,7 +3,7 @@ import { debounce } from 'lodash';
 import { ASC_LAYERS, LAYER, TILE_SIZE } from "../constants";
 import { BackgroundColorView } from "./backgroundColorView";
 import { GridView } from "./gridView";
-import { getMapItemViewCtor } from "./mapItemView";
+import { getMapItemViewCtor } from "./utils";
 import { MaskView } from "./maskView";
 import { MouseWheel } from "../controller/mouseWheel";
 import { MouseMiddle } from "../controller/mouseMiddle";
@@ -70,6 +70,8 @@ export class MapCanvas extends EventEmitter {
     this.add(this.gridView);
     this.add(this.maskView);
     this.maskView.update();
+
+    this.toolView = null; // TODO: 也许有多个
 
     this.debouncedRender();
 
@@ -199,6 +201,10 @@ export class MapCanvas extends EventEmitter {
     }
 
     objects.push(this.gridView.object);
+
+    if (this.toolView) {
+      objects.push(this.toolView.object);
+    }
     
     this.canvas._objects = objects;
     this.canvas.requestRenderAll();
@@ -387,5 +393,15 @@ export class MapCanvas extends EventEmitter {
     });
     activeSelection.controls = selectionControls;
     return activeSelection;
+  }
+
+  addToolView(toolView) {
+    this.toolView = toolView;
+    this.add(toolView);
+  }
+
+  removeToolView(toolView) {
+    this.toolView = null;
+    this.remove(toolView);
   }
 }

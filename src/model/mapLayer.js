@@ -43,6 +43,18 @@ export class MapLayer {
     return null;
   }
 
+  // TODO: 性能优化
+  getItemByRect(rect) {
+    const descZOrders = this.zOrders.slice().reverse();
+    for (const zOrder of descZOrders) {
+      const mapItem = this.zOrderToItem.get(zOrder);
+      if (isRotatedRectIntersect(mapItem, mapItem.angle, rect, 0)) {
+        return mapItem;
+      }
+    }
+    return null;
+  }
+
   _canMove(mapItem, left, top) {
     // 子类可以覆盖
     return true;

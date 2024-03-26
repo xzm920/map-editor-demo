@@ -12,6 +12,7 @@ export class ToolSelect {
 
   dispose() {
     this._unlisten();
+    this.selection.unselect();
   }
 
   _listen() {

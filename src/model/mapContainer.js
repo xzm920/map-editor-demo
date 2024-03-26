@@ -9,6 +9,7 @@ export class MapContainer extends EventEmitter {
 
     this.width = width;
     this.height = height;
+    this.bbox = this.getBoundingRect();
     this.layers = this.createLayers(width, height);
   }
 
@@ -115,11 +116,21 @@ export class MapContainer extends EventEmitter {
     this.emit('toggleMaskPlayer', data);
   }
 
-  getItemByPoint(point, layers = DESC_LAYERS) {
-    const descLayers = layers.slice().sort().reverse();
+  getItemByPoint(point, descLayers = DESC_LAYERS) {
     for (const zIndex of descLayers) {
       const layer = this.getLayer(zIndex);
       const mapItem = layer.getItemByPoint(point);
+      if (mapItem) {
+        return mapItem;
+      }
+    }
+    return null;
+  }
+
+  getItemByRect(rect, descLayers = DESC_LAYERS) {
+    for (const zIndex of descLayers) {
+      const layer = this.getLayer(zIndex);
+      const mapItem = layer.getItemByRect(rect);
       if (mapItem) {
         return mapItem;
       }

@@ -111,8 +111,9 @@ export function isRotatedRectIntersect(rect1, angle1, rect2, angle2) {
 }
 
 export function isRectIntersect(rect1, rect2) {
-  return rect1.left <= rect2.left + rect2.width
-    && rect1.left + rect1.width >= rect2.left
-    && rect1.top <= rect2.top + rect2.height
-    && rect1.top + rect1.height >= rect2.top;
+  // 仅边相交、点相交，不算做相交。把<=改成<，把>=改成>。
+  return rect1.left < rect2.left + rect2.width
+    && rect1.left + rect1.width > rect2.left
+    && rect1.top < rect2.top + rect2.height
+    && rect1.top + rect1.height > rect2.top;
 }

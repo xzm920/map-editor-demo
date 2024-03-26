@@ -4,6 +4,10 @@ import { HistoryManager } from './controller/history/historyManager';
 import { EventEmitter } from './eventEmitter';
 import { ToolSelect } from './controller/tool/toolSelect';
 import { Selection } from './controller/selection';
+import { ToolManager } from './controller/tool/toolManager';
+import { TOOL } from './constants';
+import { ToolHand } from './controller/tool/toolHand';
+import { ToolErase } from './controller/tool/toolErase';
 
 export class MapEditor extends EventEmitter {
   constructor(options) {
@@ -29,7 +33,11 @@ export class MapEditor extends EventEmitter {
     this.history = new HistoryManager(this.model);
     this.selection = new Selection(this);
 
-    this.toolSelect = new ToolSelect(this);
+    this.toolManager = new ToolManager(this);
+    this.toolManager.registerTool(TOOL.select, ToolSelect);
+    this.toolManager.registerTool(TOOL.hand, ToolHand);
+    this.toolManager.registerTool(TOOL.erase, ToolErase);
+    this.toolManager.invokeTool(TOOL.select);
 
     this._unlisten = this._listen();
   }
@@ -47,7 +55,7 @@ export class MapEditor extends EventEmitter {
   }
 
   dispose() {
-    this.toolSelect.dispose();
+    this.toolManager.stopTool();
     this.view.dispose();
     this.history.dispose();
     this._unlisten();
@@ -144,5 +152,17 @@ export class MapEditor extends EventEmitter {
 
   getIntersectItems(mapItem) {
     return this.model.getIntersectItems(mapItem);
+  }
+
+  get currentTool() {
+    return this.toolManager.current;
+  }
+
+  invokeTool(name) {
+    this.toolManager.invokeTool(name);
+  }
+
+  stopTool() {
+    this.toolManager.stopTool();
   }
 }

@@ -26,7 +26,7 @@ export const ASC_LAYERS = [
 
 export const DESC_LAYERS = ASC_LAYERS.slice().reverse();
 
-export const NON_EFFECT_LAYERS = DESC_LAYERS.filter((zIndex) => zIndex !== LAYER.effect);
+export const DESC_NON_EFFECT_LAYERS = DESC_LAYERS.filter((zIndex) => zIndex !== LAYER.effect);
 
 export const USER_LAYER = {
   effect: 1,
@@ -63,3 +63,9 @@ export const DEFAULT_TEXT_ALIGN = TEXT_ALIGN.left;
 export const DEFAULT_FONT_SIZE = 24;
 export const DEFAULT_LINE_HEIGHT = 1.2;
 export const DEFAULT_TEXT_COLOR = '#000';
+
+export const TOOL = {
+  select: 'select',
+  hand: 'hand',
+  erase: 'erase',
+};

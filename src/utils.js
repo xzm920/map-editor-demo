@@ -1,5 +1,6 @@
 import { v4 } from "uuid";
 import { TILE_SIZE } from "./constants";
+import { clamp } from "lodash";
 
 export const uuid = v4;
 
@@ -37,23 +38,15 @@ export function toTiledCoord(x) {
   return Math.floor(x / TILE_SIZE) * TILE_SIZE;
 }
 
-export function clamp(val, min, max) {
-  if (val < min) return min;
-  if (val > max) return max;
-  return val;
-}
-
-const { abs } = Math;
-
 export function getRectOffsetToClosestTile(rect, threshold) {
   const offsetLeft = getOffsetToClosedTile(rect.left, threshold);
   const offsetRight = getOffsetToClosedTile(rect.left + rect.width, threshold);
   const offsetTop = getOffsetToClosedTile(rect.top, threshold);
   const offsetBottom = getOffsetToClosedTile(rect.top + rect.height, threshold);
-  const minOffsetX = abs(offsetLeft) <= abs(offsetRight) ? offsetLeft : offsetRight;
-  const minOffsetY = abs(offsetTop) <= abs(offsetBottom) ? offsetTop : offsetBottom;
-  const offsetX = abs(minOffsetX) <= threshold ? minOffsetX : 0;
-  const offsetY = abs(minOffsetY) <= threshold ? minOffsetY : 0;
+  const minOffsetX = Math.abs(offsetLeft) <= Math.abs(offsetRight) ? offsetLeft : offsetRight;
+  const minOffsetY = Math.abs(offsetTop) <= Math.abs(offsetBottom) ? offsetTop : offsetBottom;
+  const offsetX = Math.abs(minOffsetX) <= threshold ? minOffsetX : 0;
+  const offsetY = Math.abs(minOffsetY) <= threshold ? minOffsetY : 0;
   return { offsetX, offsetY };
 }
 
@@ -64,4 +57,10 @@ function getOffsetToClosedTile(coord) {
   return Math.abs(offsetToLowTile) <= Math.abs(offsetToHighTile)
     ? offsetToLowTile
     : offsetToHighTile;
+}
+
+export function clampTileInRect(point, rect2) {
+  const x = clamp(point.x, rect2.left, rect2.left + rect2.width - TILE_SIZE);
+  const y = clamp(point.y, rect2.top, rect2.top + rect2.height - TILE_SIZE);
+  return { x, y };
 }
