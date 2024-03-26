@@ -54,10 +54,14 @@ export class ToolSelect {
       const upPoint = e.absolutePointer;
       this.selection.finishMove(upPoint, startPoint);
       startPoint = null;
+      selectedStartPos = null;
     };
 
     const handleObjectModified = (e) => {
       const { action, target } = e;
+
+      // 忽略group内的对象
+      if (target.group) return;
 
       const itemView = this.mapCanvas.getViewByObject(target);
       if (!itemView) return;

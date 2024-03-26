@@ -1,7 +1,7 @@
 import { clamp } from "lodash";
 import { LAYER, DESC_NON_EFFECT_LAYERS, TILE_SIZE, MAP_ITEM_TYPE } from "../constants";
 import { getBBox, isPointInRect, isPointInRotatedRect } from "../geometry";
-import { getRectOffsetToClosestTile, shallowEqual, toIntegerPoint, toTiledPoint } from "../utils";
+import { getRectOffsetToClosestTile, toIntegerPoint, toTiledPoint } from "../utils";
 
 export class Selection {
   constructor(mapEditor) {
@@ -58,8 +58,6 @@ export class Selection {
     }
 
     if (items.length === 0) return;
-
-    if (shallowEqual(items, this.items)) return;
 
     this.items = items;
     this.bbox = this._getBBox();
@@ -196,11 +194,7 @@ export class Selection {
         if (type === 'before:modelChange') {
           this.mapCanvas.unselect();
         } else {
-          if (shallowEqual(items, this.items)) {
-            this.mapCanvas.select(items);
-          } else {
-            this.select(items);
-          }
+          this.select(items);
         }
       }
     };

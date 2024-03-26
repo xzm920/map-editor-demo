@@ -170,7 +170,7 @@ export class MapCanvas extends EventEmitter {
   }
 
   onUpdate() {
-    this.debouncedRender();
+    this.render();
   }
 
   render() {
@@ -366,7 +366,6 @@ export class MapCanvas extends EventEmitter {
   }
 
   unselect() {
-    // debugger;
     this.canvas.discardActiveObject();
     this.canvas.requestRenderAll();
   }
