@@ -53,7 +53,7 @@ export class ImageView {
     });
   }
 
-  render() {
+  syncModel() {
     this.updateObject(this.model);
 
     this.parent?.onUpdate();

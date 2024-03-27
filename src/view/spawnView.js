@@ -35,7 +35,7 @@ export class SpawnView {
     });
   }
 
-  render() {
+  syncModel() {
     this.updateObject(this.model);
     this.parent?.onUpdate();
   }

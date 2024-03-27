@@ -71,7 +71,7 @@ export class ToolSelect {
       const mapBound = this.mapContainer.getBoundingRect();
       const bound = getBBox({left: target.left, top: target.top, width: target.width, height: target.height}, target.angle);
       if (!isRectInRect(bound, mapBound)) {
-        itemView.render();
+        itemView.syncModel();
         return;
       }
 

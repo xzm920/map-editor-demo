@@ -46,7 +46,7 @@ export class BackgroundImageView {
     });
   }
 
-  render() {
+  syncModel() {
     this.updateObject(this.model);
     this.parent?.onUpdate();
   }

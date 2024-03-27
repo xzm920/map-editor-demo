@@ -69,7 +69,7 @@ export class TiledObjectView {
     });
   }
 
-  render() {
+  syncModel() {
     this.updateObject(this.model);
     
     if (this.model.isCollider && !this.impassableObject) {

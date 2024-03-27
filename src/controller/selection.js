@@ -103,20 +103,33 @@ export class Selection {
     const { movementX, movementY } = this._getMovement(upPoint, startPoint);
     if (movementX === 0 && movementY === 0) return;
     
-    if (this.items.length > 1) {
-      this.mapCanvas.unselect();
-    }
-    
     this._isBusy = true;
-    this.items.forEach((item) => {
-      item.move(item.left + movementX, item.top + movementY);
-    });
+    this._batchMove(movementX, movementY);
     this._isBusy = false;
-    this.bbox = this._getBBox();
+  }
 
-    if (this.items.length > 1) {
-      this.mapCanvas.select(this.items);
+  _batchMove(movementX, movementY) {
+    this.mapEditor.startBatch();
+    const items = this.items;
+    const positions = items.map((v) => ({ left: v.left, top: v.top }));
+    this.unselect();
+    try {
+      for (let item of items) {
+        item.move(item.left + movementX, item.top + movementY);
+      }
+    } catch (err) {
+      items.forEach((item, index) => {
+        const { left, top } = positions[index];
+        item.move(left, top);
+        const itemView = this.mapCanvas.getItemView(item);
+        itemView?.syncModel();
+      });
+      this.select(items);
+      this.mapEditor.abortBatch();
+      return;
     }
+    this.select(items);
+    this.mapEditor.stopBatch();
   }
 
   _getBBox() {

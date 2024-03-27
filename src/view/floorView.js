@@ -35,7 +35,7 @@ export class FloorView {
     });
   }
 
-  render() {
+  syncModel() {
     this.updateObject(this.model);
     this.parent?.onUpdate();
   }

@@ -124,7 +124,7 @@ export class MapCanvas extends EventEmitter {
 
     const handleUpdate = ({ item }) => {
       const itemView = this.getItemView(item);
-      itemView.render();
+      itemView.syncModel();
     };
 
     const handleSortItem = () => {

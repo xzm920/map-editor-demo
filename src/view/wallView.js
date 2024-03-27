@@ -63,7 +63,7 @@ export class WallView {
     });
   }
 
-  render() {
+  syncModel() {
     this.updateObject(this.model);
     if (this.model.isCollider) {
       this.updateImpassable(this.model);
