@@ -1,8 +1,8 @@
 import { isMac } from '../env.js';
 
 export class MouseWheel {
-  constructor(mapCanvas) {
-    this.mapCanvas = mapCanvas;
+  constructor(mapEditor) {
+    this.mapEditor = mapEditor;
 
     this._unlisten = this._listen();
   }
@@ -30,24 +30,18 @@ export class MouseWheel {
       if (ctrlAndCommandKey) {
         if (deltaY === 0) return;
         // 缩放
-        const zoom = this.mapCanvas.zoom;
+        const zoom = this.mapEditor.zoom;
         let newZoom = deltaY > 0 ? zoom / 1.09 : zoom * 1.09;
-        newZoom = Math.max(this.mapCanvas.minZoom, newZoom);
-        newZoom = Math.min(this.mapCanvas.maxZoom, newZoom);
-        if (newZoom === zoom) return;
-
-        this.mapCanvas.zoomToPoint(newZoom, x, y);
-        this.mapCanvas.render();
+        this.mapEditor.zoomToPoint(newZoom, x, y);
       } else {
         // 移动
-        this.mapCanvas.relativePan(-deltaX, -deltaY);
-        this.mapCanvas.render();
+        this.mapEditor.relativePan(-deltaX, -deltaY);
       }
     };
 
-    this.mapCanvas.canvas.on('mouse:wheel', handleMouseWheel);
+    this.mapEditor.canvas.on('mouse:wheel', handleMouseWheel);
     return () => {
-      this.mapCanvas.canvas.off('mouse:wheel', handleMouseWheel);
+      this.mapEditor.canvas.off('mouse:wheel', handleMouseWheel);
     };
   }
 }

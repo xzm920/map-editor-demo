@@ -2,23 +2,25 @@ import { fabric } from "fabric";
 import { TILE_SIZE } from "../constants";
 import { fetchImage } from "../utils";
 
-export class GridView {
-  constructor(width, height) {
-    this.parent = null;
-    this.object = new fabric.Image(null, {
-      left: -0.5,
-      top: -0.5,
-      width: TILE_SIZE * width + 1,
-      height: TILE_SIZE * height + 1,
-      selectable: false,
-      evented: false,
-    });
-    const url = createGridSVGUrl(width, height);
-    fetchImage(url).then((elem) => {
-      this.object.setElement(elem);
-      this.parent?.onLoad();
-    });
-  }
+export function createGrid(width, height, onLoad) {
+  const grid = new fabric.Image(null, {
+    left: -0.5,
+    top: -0.5,
+    width: TILE_SIZE * width + 1,
+    height: TILE_SIZE * height + 1,
+    selectable: false,
+    evented: false,
+  });
+
+  const url = createGridSVGUrl(width, height);
+
+  fetchImage(url).then((elem) => {
+    grid.setElement(elem);
+
+    if (onLoad) onLoad();
+  });
+
+  return grid;
 }
 
 function createGridSVGUrl(width, height) {

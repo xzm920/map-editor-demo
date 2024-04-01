@@ -1,6 +1,7 @@
 import { DEFAULT_TEXT_COLOR, DEFAULT_FONT_SIZE, LAYER, MAP_ITEM_TYPE, USER_LAYER, DEFAULT_TEXT_ALIGN, TILE_SIZE } from "../constants";
-import { patchToChanges, uuid } from "../utils";
+import { isEmptyObject, patchToChanges, uuid } from "../utils";
 import { getBBox } from '../geometry';
+import { EVENT } from "../event";
 
 export class MapItem {
   // FIXME:
@@ -37,7 +38,7 @@ export class MapItem {
     };
   }
 
-  get tiled() {
+  isTiled() {
     return this.zIndex !== LAYER.background
       && this.zIndex !== LAYER.freeObjBelowAvatar
       && this.zIndex !== LAYER.freeObjAboveAvatar;
@@ -53,7 +54,7 @@ export class MapItem {
   }
 
   canMove(left, top) {
-    if (this.tiled && (left % TILE_SIZE !== 0 || top % TILE_SIZE !== 0)) {
+    if (this.isTiled() && (left % TILE_SIZE !== 0 || top % TILE_SIZE !== 0)) {
       return false;
     }
     if (!this.parent.canMove(this, left, top)) {
@@ -76,7 +77,9 @@ export class MapItem {
   }
 
   update(patch, merge = false) {
-    this.notify('before:modelChange');
+    if (isEmptyObject(patch)) return;
+
+    this.notify(EVENT.beforeModelChange);
     const changes = patchToChanges(this, patch);
     Object.assign(this, patch);
 
@@ -88,7 +91,7 @@ export class MapItem {
     if (merge) {
       data.merge = true;
     }
-    this.notify('update', data);
+    this.notify(EVENT.update, data);
   }
 
   notify(event, data) {
@@ -215,7 +218,7 @@ export class MapImage extends MapItem {
   }
 
   setOpacity(opacity) {
-    this.update({ opacity }, true);
+    this.update({ opacity });
   }
 
   scaleFlip(left, top, width, height, flipX, flipY) {
@@ -275,15 +278,15 @@ export class MapText extends MapItem {
   }
 
   setOpacity(opacity) {
-    this.update({ opacity }, true);
+    this.update({ opacity });
   }
 
   setFontSize(fontSize) {
-    this.update({ fontSize }, true);
+    this.update({ fontSize });
   }
 
   setColor(color) {
-    this.update({ color }, true);
+    this.update({ color });
   }
 
   setItalic(isItalic) {
@@ -303,7 +306,7 @@ export class MapText extends MapItem {
   }
 
   setLineHeight(lineHeight) {
-    this.update({ lineHeight }, true);
+    this.update({ lineHeight });
   }
 
   levelUpAbove(item) {

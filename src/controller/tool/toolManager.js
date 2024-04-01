@@ -1,3 +1,5 @@
+import { EVENT } from "../../event";
+
 export class ToolManager {
   constructor(mapEditor) {
     this.mapEditor = mapEditor;
@@ -18,7 +20,7 @@ export class ToolManager {
     this.current = name;
     this.currentTool = new ToolCtor(this.mapEditor);
 
-    this.mapEditor.emit('toolChange', { tool: this.current });
+    this.mapEditor.emit(EVENT.toolChange, { tool: this.current });
   }
 
   stopTool() {

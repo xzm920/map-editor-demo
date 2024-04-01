@@ -1,38 +1,42 @@
 import { DESC_NON_EFFECT_LAYERS, LAYER, TILE_SIZE } from '../../constants';
 import { toTiledPoint } from "../../utils";
 import { isRectInRect } from "../../geometry";
-import { EraserView } from '../../view/eraseView';
+import { createEraser } from '../../view';
 
 export class ToolErase {
   constructor(mapEditor) {
     this.mapEditor = mapEditor;
-    this.mapCanvas = mapEditor.view;
-    this.mapContainer = mapEditor.model;
 
     this.eraserSize = TILE_SIZE;
-    this.eraserView = new EraserView(this.eraserSize, this.eraserSize);
-    this.mapCanvas.addToolView(this.eraserView);
+    this.eraser = createEraser({
+      left: 0,
+      top: 0,
+      width: this.eraserSize,
+      height: this.eraserSize,
+    });
+    this.mapEditor.presenter.addToolView(this.eraser);
 
     this._unlisten = this._listen();
   }
 
   dispose() {
     this._unlisten();
-    this.mapCanvas.removeToolView(this.eraserView);
+    this.mapEditor.presenter.removeToolView(this.eraser);
   }
 
   _listen() {
     let isPanning = false;
+    let lastMovePoint = null;
 
     const getEraserRect = (point) => {
       return { left: point.x, top: point.y, width: this.eraserSize, height: this.eraserSize };
     };
 
     const removeItemByRect = (rect) => {
-      const descLayers = this.mapCanvas.showMask ? [LAYER.effect] : DESC_NON_EFFECT_LAYERS;
-      const mapItem = this.mapContainer.getItemByRect(rect, descLayers);
+      const descLayers = this.mapEditor.showMask ? [LAYER.effect] : DESC_NON_EFFECT_LAYERS;
+      const mapItem = this.mapEditor.model.getItemByRect(rect, descLayers);
       if (mapItem) {
-        this.mapContainer.remove(mapItem);
+        this.mapEditor.model.remove(mapItem);
       }
     };
 
@@ -43,15 +47,17 @@ export class ToolErase {
       removeItemByRect(rect);
     };
 
-    // TODO: throttle ?
     const handleMouseMove = (e) => {
       const point = toTiledPoint(e.absolutePointer);
+      if (lastMovePoint && point.x === lastMovePoint.x && point.y === lastMovePoint.y) return;
+      lastMovePoint = point;
       const rect = getEraserRect(point);
-      const visible = isRectInRect(rect, this.mapContainer.bbox);
+      if (!isRectInRect(rect, this.mapEditor.bbox)) return;
 
-      this.eraserView.setPosition(point.x, point.y);
-      this.eraserView.setVisible(visible);
-      this.mapCanvas.render();
+      this.mapEditor.presenter.updateToolView({
+        left: point.x,
+        top: point.y,
+      });
 
       if (isPanning) {
         removeItemByRect(rect);
@@ -60,16 +66,17 @@ export class ToolErase {
 
     const handleMouseUp = () => {
       isPanning = false;
+      lastMovePoint = null;
     };
 
-    this.mapCanvas.canvas.on('mouse:down', handleMouseDown);
-    this.mapCanvas.canvas.on('mouse:move', handleMouseMove);
-    this.mapCanvas.canvas.on('mouse:up', handleMouseUp);
+    this.mapEditor.canvas.on('mouse:down', handleMouseDown);
+    this.mapEditor.canvas.on('mouse:move', handleMouseMove);
+    this.mapEditor.canvas.on('mouse:up', handleMouseUp);
 
     return () => {
-      this.mapCanvas.canvas.off('mouse:down', handleMouseDown);
-      this.mapCanvas.canvas.off('mouse:move', handleMouseMove);
-      this.mapCanvas.canvas.off('mouse:up', handleMouseUp);
+      this.mapEditor.canvas.off('mouse:down', handleMouseDown);
+      this.mapEditor.canvas.off('mouse:move', handleMouseMove);
+      this.mapEditor.canvas.off('mouse:up', handleMouseUp);
     };
   }
 }

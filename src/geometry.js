@@ -50,6 +50,10 @@ export function isPointInRect(point, rect) {
 }
 
 export function isPointInRotatedRect(point, rect, angle) {
+  if (angle === 0 || angle == null) {
+    return isPointInRect(point, rect);
+  }
+  
   const origin = { x: rect.left, y: rect.top };
   const radians = degreeToRadian(-angle);
   const rotatedPoint = rotatePoint(point, origin, radians);

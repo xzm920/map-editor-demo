@@ -1,4 +1,4 @@
-import { EventEmitter } from '../../eventEmitter';
+import { EVENT } from '../../event';
 import { shallowEqual } from '../../utils';
 import { AddCommand } from './addCommand';
 import { RemoveCommand } from './removeCommand';
@@ -6,11 +6,10 @@ import { SortItemCommand } from './sortItemCommand';
 import { ToggleMaskPlayerCommand } from './toggleMaskPlayerCommand';
 import { UpdateCommand } from './updateCommand';
 
-export class HistoryManager extends EventEmitter {
-  constructor(mapContainer) {
-    super();
-    
-    this.mapContainer = mapContainer;
+export class HistoryManager {
+  constructor(mapEditor) {
+    this.mapEditor = mapEditor;
+    this.mapContainer = mapEditor.model;
     // this.maxUndoTimes = 100;
     this.undoStack = [];
     this.redoStack = [];
@@ -28,18 +27,18 @@ export class HistoryManager extends EventEmitter {
   }
 
   _listen() {
-    const handleAdd = ({ mapItem }) => {
+    const handleAdd = ({ item }) => {
       // 在执行 undo/redo 的过程中不响应来自 model 的事件，避免发生循环调用
       if (this._isBusy) return;
   
-      const command = new AddCommand(this.mapContainer, mapItem);
+      const command = new AddCommand(this.mapContainer, item);
       this._pushCommand(command);
     };
 
-    const handleRemove = ({ mapItem }) => {
+    const handleRemove = ({ item }) => {
       if (this._isBusy) return;
   
-      const command = new RemoveCommand(this.mapContainer, mapItem);
+      const command = new RemoveCommand(this.mapContainer, item);
       this._pushCommand(command);
     };
 
@@ -64,18 +63,18 @@ export class HistoryManager extends EventEmitter {
       this._pushCommand(command);
     };
 
-    this.mapContainer.on('add', handleAdd);
-    this.mapContainer.on('remove', handleRemove);
-    this.mapContainer.on('update', handleUpdate);
-    this.mapContainer.on('sortItem', handleSortItem);
-    this.mapContainer.on('toggleMaskPlayer', handleToggleMaskPlayer);
+    this.mapContainer.on(EVENT.add, handleAdd);
+    this.mapContainer.on(EVENT.remove, handleRemove);
+    this.mapContainer.on(EVENT.update, handleUpdate);
+    this.mapContainer.on(EVENT.sortItem, handleSortItem);
+    this.mapContainer.on(EVENT.toggleMaskPlayer, handleToggleMaskPlayer);
 
     return () => {
-      this.mapContainer.off('add', handleAdd);
-      this.mapContainer.off('remove', handleRemove);
-      this.mapContainer.off('update', handleUpdate);
-      this.mapContainer.off('sortItem', handleSortItem);
-      this.mapContainer.off('toggleMaskPlayer', handleToggleMaskPlayer);
+      this.mapContainer.off(EVENT.add, handleAdd);
+      this.mapContainer.off(EVENT.remove, handleRemove);
+      this.mapContainer.off(EVENT.update, handleUpdate);
+      this.mapContainer.off(EVENT.sortItem, handleSortItem);
+      this.mapContainer.off(EVENT.toggleMaskPlayer, handleToggleMaskPlayer);
     };
   }
 
@@ -105,7 +104,7 @@ export class HistoryManager extends EventEmitter {
     }
     this.redoStack.push(command);
     this._isBusy = false;
-    this.emit('history');
+    this.mapEditor.emit(EVENT.history);
   }
 
   redo() {
@@ -122,7 +121,7 @@ export class HistoryManager extends EventEmitter {
     }
     this.undoStack.push(command);
     this._isBusy = false;
-    this.emit('history');
+    this.mapEditor.emit(EVENT.history);
   }
 
   _pushCommand(command) {
@@ -158,7 +157,7 @@ export class HistoryManager extends EventEmitter {
       this.redoStack = [];
       this.undoStack.push(this._batchCommands);
       this._batchCommands = [];
-      this.emit('history');
+      this.mapEditor.emit(EVENT.history);
     }
   }
 
@@ -166,7 +165,7 @@ export class HistoryManager extends EventEmitter {
   startBatch() {
     if (!this._isBatching) {
       this._isBatching = true;
-      this.emit('history');
+      this.mapEditor.emit(EVENT.history);
     }
   }
 
@@ -174,7 +173,7 @@ export class HistoryManager extends EventEmitter {
     if (this._isBatching) {
       this._isBatching = false;
       this._flushBatchCommands();
-      this.emit('history');
+      this.mapEditor.emit(EVENT.history);
     }
   }
 
@@ -182,7 +181,7 @@ export class HistoryManager extends EventEmitter {
     if (this._isBatching) {
       this._isBatching = false;
       this._batchCommands = [];
-      this.emit('history');
+      this.mapEditor.emit(EVENT.history);
     }
   }
 }

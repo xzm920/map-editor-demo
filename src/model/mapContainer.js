@@ -1,7 +1,8 @@
 import { EventEmitter } from '../eventEmitter';
 import { AvatarLayer, BackgroundLayer, EffectLayer, FloorLayer, FreeLayer, TiledLayer, WallLayer } from './mapLayer';
 import { DESC_LAYERS, LAYER, TILE_SIZE, USER_LAYER } from '../constants';
-import { getMapItemCtor } from './mapItem'; 
+import { getMapItemCtor } from './mapItem';
+import { EVENT } from '../event';
 
 export class MapContainer extends EventEmitter {
   constructor(width, height) {
@@ -95,7 +96,7 @@ export class MapContainer extends EventEmitter {
     const layer = this.getLayer(mapItem.zIndex);
     if (mapItem.userLayer !== USER_LAYER.object && mapItem.userLayer !== USER_LAYER.freeObject) return;
     
-    this.notify('before:modelChange');
+    this.notify(EVENT.beforeModelChange);
     layer.remove(mapItem, false);
     const newZIndex = mapItem.getOppositeLayer();
     const oldZOrder = mapItem.zOrder;
@@ -113,7 +114,7 @@ export class MapContainer extends EventEmitter {
       oldZOrder,
       newZOrder: mapItem.zOrder,
     };
-    this.emit('toggleMaskPlayer', data);
+    this.emit(EVENT.toggleMaskPlayer, data);
   }
 
   getItemByPoint(point, descLayers = DESC_LAYERS) {

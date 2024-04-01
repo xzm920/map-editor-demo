@@ -6,11 +6,9 @@ export class ToolText {
   
   constructor(mapEditor) {
     this.mapEditor = mapEditor;
-    this.mapContainer = this.mapEditor.model;
-    this.mapCanvas = mapEditor.view;
 
-    if (this.mapCanvas.showMask) {
-      this.mapCanvas.toggleMask();
+    if (this.mapEditor.showMask) {
+      this.mapEditor.toggleMask();
     }
     
     this._unlisten = this._listen();
@@ -26,20 +24,20 @@ export class ToolText {
       const width = 100;
       const height = 28;
       let rect = { left: point.x, top: point.y, width, height };
-      rect = clampRectInRect(rect, this.mapContainer.bbox);
+      rect = clampRectInRect(rect, this.mapEditor.model.bbox);
       const text = createText('', rect.left, rect.top, rect.width, rect.height);
-      this.mapEditor.startBatch();
-      this.mapContainer.add(text);
+      this.mapEditor.add(text);
 
-      this.mapEditor.toolManager.invokeTool(TOOL.select);
-      this.mapEditor.selection.select(text);
-      const textView = this.mapCanvas.getItemView(text);
-      textView.enterEditing();
+      this.mapEditor.invokeTool(TOOL.select);
+      this.mapEditor.select(text);
+      const textObject = this.mapEditor.getViewByItem(text);
+      textObject.enterEditing();
+      // TODO: 处理空文字删除的问题
     };
 
-    this.mapCanvas.canvas.on('mouse:down', handleMouseDown);
+    this.mapEditor.canvas.on('mouse:down', handleMouseDown);
     return () => {
-      this.mapCanvas.canvas.off('mouse:down', handleMouseDown);
+      this.mapEditor.canvas.off('mouse:down', handleMouseDown);
     };
   }
 }

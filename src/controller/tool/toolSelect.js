@@ -1,46 +1,81 @@
 import { fabric } from "fabric";
-import { getBBox, isRectInRect } from "../../geometry";
+import { SELECTION } from "../../constants";
+import { toTiledCoord } from "../../utils";
+import { EVENT } from "../../event";
 
 export class ToolSelect {
   constructor(mapEditor) {
     this.mapEditor = mapEditor;
-    this.mapContainer = mapEditor.model;
-    this.mapCanvas = mapEditor.view;
-    this.selection = mapEditor.selection;
 
     this._unlisten = this._listen();
   }
 
   dispose() {
     this._unlisten();
-    this.selection.unselect();
+    this.mapEditor.selection.clear();
   }
 
   _listen() {
     let isPanning = false;
     let startPoint = null;
-    let selectedStartPos = null;
+    let startPos = null;
+    let didMove = false;
+    let downOnSelection = false;
+    let downItem = null;
 
     const handleMouseDown = (e) => {
       if (e.transform && e.transform.action !== 'drag') return;
       
       if (e.target instanceof fabric.IText && e.target.isEditing) return;
 
+      didMove = false;
+
+      const { shiftKey } = e.e;
+      const { selection } = this.mapEditor;
       startPoint = e.absolutePointer;
-      this.selection.selectByPoint(startPoint, e.e.shiftKey);
 
-      if (this.selection.isEmpty || e.e.shiftKey) return;
+      downOnSelection = selection.containsPoint(startPoint);
+      downItem = this.mapEditor.getItemByPoint(startPoint);
+      const downOnSelected = this.mapEditor.selection.isSelected(downItem);
+      
+      if (shiftKey && downItem) {
+        if (downOnSelected) {
+          selection.unselect(downItem);
+        } else {
+          selection.select(downItem);
+        }
+      } else if (!downOnSelection) {
+        if (downItem) {
+          selection.reset(downItem);
+        } else {
+          selection.clear();
+        }
+      }
 
-      isPanning = true;
-      const activeObject = this.mapCanvas.canvas.getActiveObject();
-      selectedStartPos = { left: activeObject.left, top: activeObject.top };
+      if (selection.status !== SELECTION.none) {
+        isPanning = true;
+        startPos = { x: selection.bbox.left, y: selection.bbox.top };
+      }
     };
 
     const handleMouseMove = (e) => {
       if (!isPanning) return;
-
+      
+      const { selection } = this.mapEditor;
       const movePoint = e.absolutePointer;
-      this.selection.move(movePoint, startPoint, selectedStartPos);
+      didMove = true;
+
+      let left;
+      let top;
+      if (selection.isTiled()) {
+        left = startPos.x + toTiledCoord(movePoint.x) - toTiledCoord(startPoint.x);
+        top = startPos.y + toTiledCoord(movePoint.y) - toTiledCoord(startPoint.y);
+      } else {
+        left = startPos.x + movePoint.x - startPoint.x;
+        top = startPos.y + movePoint.y - startPoint.y;
+      }
+      selection.move(left, top);
+
       // 保证移动选中的文字松开后，文字不会进入编辑状态。见 https://github.com/fabricjs/fabric.js/blob/4c305baae69fd998e783195fd23453fd05187e5a/src/mixins/itext_click_behavior.mixin.js#L156
       if (e.transform) {
         e.transform.actionPerformed = true;
@@ -49,131 +84,64 @@ export class ToolSelect {
 
     const handleMouseUp = (e) => {
       if (!isPanning) return;
-      isPanning = false;
 
-      const upPoint = e.absolutePointer;
-      this.selection.finishMove(upPoint, startPoint);
-      startPoint = null;
-      selectedStartPos = null;
-    };
-
-    const handleObjectModified = (e) => {
-      const { action, target } = e;
-
-      // 忽略group内的对象
-      if (target.group) return;
-
-      const itemView = this.mapCanvas.getViewByObject(target);
-      if (!itemView) return;
-      const mapItem = itemView.model;
-      if (!mapItem) return;
-
-      const mapBound = this.mapContainer.getBoundingRect();
-      const bound = getBBox({left: target.left, top: target.top, width: target.width, height: target.height}, target.angle);
-      if (!isRectInRect(bound, mapBound)) {
-        itemView.syncModel();
-        return;
-      }
-
-      if (action === 'scale' || action === 'scaleX' || action === 'scaleY') {
-        if (target.lockScalingFlip) {
-          mapItem.scale(target.left, target.top, target.width * target.scaleX, target.height * target.scaleY);
+      const { shiftKey } = e.e;
+      const { selection } = this.mapEditor;
+      if (didMove) {
+        const upPoint = e.absolutePointer;
+        let left;
+        let top;
+        if (selection.isTiled()) {
+          left = startPos.x + toTiledCoord(upPoint.x) - toTiledCoord(startPoint.x);
+          top = startPos.y + toTiledCoord(upPoint.y) - toTiledCoord(startPoint.y);
         } else {
-          mapItem.scaleFlip(target.left, target.top, target.width * target.scaleX, target.height * target.scaleY, target.flipX, target.flipY);
+          left = startPos.x + upPoint.x - startPoint.x;
+          top = startPos.y + upPoint.y - startPoint.y;
         }
-      } else if (action === 'rotate') {
-        mapItem.rotate(target.angle, target.left, target.top);
-      } else if (action === 'resizing') {
-        mapItem.resize(target.left, target.top, target.width, target.height);
+        selection.finishMove(left, top);
+      } else if (!shiftKey) {
+        if (downItem) {
+          selection.reset(downItem);
+        } else {
+          selection.clear();
+        }
       }
-    };
-    
-    const handleObjectScaling = () => {
-      // TODO: 
-    };
 
-    const handleObjectRotating = () => {
-      // TODO:
-    };
-
-    const handleObjectResizing = () => {
-      // TODO:
-    }
-
-    let isNewText = false;
-
-    const handleTextEditingEntered = (e) => {
-      const textObject = e.target;
-      const textView = this.mapCanvas.getViewByObject(textObject);
-      const text = textView.model;
-      isNewText = text.text === '';
-      this.mapEditor.startBatch();
-    };
-
-    const handleTextChanged = (e) => {
-      const textObject = e.target;
-      const textView = this.mapCanvas.getViewByObject(textObject);
-      const text = textView.model;
-      text.setText(textObject.text, textObject.height);
-    };
-
-    const handleTextEditingExited = (e) => {
-      const textObject = e.target;
-      const textView = this.mapCanvas.getViewByObject(textObject);
-      const text = textView.model;
-      if (textObject.text === '') {
-        // 等待完全退出编辑状态，再删除文字
-        setTimeout(() => {
-          this.mapContainer.remove(text);
-          if (isNewText) {
-            this.mapEditor.abortBatch();
-          } else {
-            this.mapEditor.stopBatch();
-          }
-        }, 0);
-      } else {
-        this.mapEditor.stopBatch();
-      }
+      isPanning = false;
+      startPoint = null;
+      startPos = null;
     };
 
     const handleContextMenu = (e) => {
-      const point = this.mapCanvas.canvas.getPointer(e);
-      this.selection.selectByPoint(point);
-      const { items } = this.selection;
-      if (items.length === 1) {
-        this.mapEditor.emit('contextMenu', {
-          mapItem: items[0],
+      const { selection, canvas } = this.mapEditor;
+      const point = canvas.getPointer(e);
+      const downItem = this.mapEditor.getItemByPoint(point);
+      let downOnSelected = selection.isSelected(downItem);
+      if (!downOnSelected) {
+        if (downItem) {
+          selection.reset(downItem);
+          downOnSelected = true;
+        }
+      }
+
+      if (downOnSelected && selection.status === SELECTION.single) {
+        this.mapEditor.emit(EVENT.contextMenu, {
+          mapItem: selection.items[0],
           position: { left: e.pageX, top: e.pageY },
         });
-      } else if (items.length > 0) {
-        // TODO: 选中多个元素时的上下文菜单
       }
     };
 
-    this.mapCanvas.canvas.on('mouse:down', handleMouseDown);
-    this.mapCanvas.canvas.on('mouse:move', handleMouseMove);
-    this.mapCanvas.canvas.on('mouse:up', handleMouseUp);
-    this.mapCanvas.canvas.on('object:modified', handleObjectModified);
-    this.mapCanvas.canvas.on('object:scaling', handleObjectScaling);
-    this.mapCanvas.canvas.on('object:rotating', handleObjectRotating);
-    this.mapCanvas.canvas.on('object:resizing', handleObjectResizing);
-    this.mapCanvas.canvas.on('text:changed', handleTextChanged);
-    this.mapCanvas.canvas.on('text:editing:entered', handleTextEditingEntered);
-    this.mapCanvas.canvas.on('text:editing:exited', handleTextEditingExited);
-    this.mapCanvas.canvas.upperCanvasEl.addEventListener('contextmenu', handleContextMenu);
+    this.mapEditor.canvas.on('mouse:down', handleMouseDown);
+    this.mapEditor.canvas.on('mouse:move', handleMouseMove);
+    this.mapEditor.canvas.on('mouse:up', handleMouseUp);
+    this.mapEditor.canvas.upperCanvasEl.addEventListener('contextmenu', handleContextMenu);
 
     return () => {
-      this.mapCanvas.canvas.off('mouse:down', handleMouseDown);
-      this.mapCanvas.canvas.off('mouse:move', handleMouseMove);
-      this.mapCanvas.canvas.off('mouse:up', handleMouseUp);
-      this.mapCanvas.canvas.off('object:modified', handleObjectModified);
-      this.mapCanvas.canvas.off('object:scaling', handleObjectScaling);
-      this.mapCanvas.canvas.on('object:rotating', handleObjectRotating);
-      this.mapCanvas.canvas.off('object:resizing', handleObjectResizing);
-      this.mapCanvas.canvas.off('text:changed', handleTextChanged);
-      this.mapCanvas.canvas.off('text:editing:exited', handleTextEditingExited);
-      this.mapCanvas.canvas.on('text:editing:entered', handleTextEditingEntered);
-      this.mapCanvas.canvas.upperCanvasEl.removeEventListener('contextmenu', handleContextMenu);
+      this.mapEditor.canvas.off('mouse:down', handleMouseDown);
+      this.mapEditor.canvas.off('mouse:move', handleMouseMove);
+      this.mapEditor.canvas.off('mouse:up', handleMouseUp);
+      this.mapEditor.canvas.upperCanvasEl.removeEventListener('contextmenu', handleContextMenu);
     };
   }
 }

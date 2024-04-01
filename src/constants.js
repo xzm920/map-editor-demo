@@ -51,6 +51,13 @@ export const MAP_ITEM_TYPE = {
   // TODO: more types
 };
 
+export const TOOL = {
+  select: 'select',
+  hand: 'hand',
+  erase: 'erase',
+  text: 'text',
+};
+
 export const IMPASSABLE_URL = 'https://dev-oss.vland.live/material/system/65433e2848c544d1ab0c43a51043f095_1649646689.png';
 
 export const TEXT_ALIGN = {
@@ -64,9 +71,13 @@ export const DEFAULT_FONT_SIZE = 24;
 export const DEFAULT_LINE_HEIGHT = 1.2;
 export const DEFAULT_TEXT_COLOR = '#000';
 
-export const TOOL = {
-  select: 'select',
-  hand: 'hand',
-  erase: 'erase',
-  text: 'text',
+export const THEME = {
+  primaryColor: '#8F7EF4',
+  textColor: '#282C4A',
+};
+
+export const SELECTION = {
+  none: 'none',
+  single: 'single',
+  multiple: 'multiple',
 };

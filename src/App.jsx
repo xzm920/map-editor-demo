@@ -6,11 +6,12 @@ import { throttle } from "lodash";
 import { MapEditor } from "./mapEditor";
 import { materials } from "../mock/materials";
 import { resources } from '../mock/resources';
-import { MAP_ITEM_TYPE, TEXT_ALIGN, TILE_SIZE, TOOL } from "./constants";
+import { DEFAULT_LINE_HEIGHT, MAP_ITEM_TYPE, TEXT_ALIGN, TILE_SIZE, TOOL } from "./constants";
 import { createBackgroundImageFromResource, createMapItemFromMaterial, createText } from "./model/create";
 import { createPortal } from "react-dom";
 import { Icon } from "./Icon";
 import { IconButton } from "./IconButton";
+import { EVENT } from "./event";
 
 function App() {
   const canvasWrapper = useRef();
@@ -48,38 +49,40 @@ function App() {
       for (let i = 0; i < 5; i++) {
         for (let j = 0; j < 5; j++) {
           const floor = createMapItemFromMaterial(materials.floor, j * TILE_SIZE, i * TILE_SIZE);
-          mapEditor.model.add(floor);
+          mapEditor.add(floor);
         }
       }
       const wallHead = createMapItemFromMaterial(materials.wallHead, 2 * TILE_SIZE, 2 * TILE_SIZE);
-      mapEditor.model.add(wallHead);
+      mapEditor.add(wallHead);
       const wallBody = createMapItemFromMaterial(materials.wallBody, 2 * TILE_SIZE, 3 * TILE_SIZE);
-      mapEditor.model.add(wallBody);
+      mapEditor.add(wallBody);
       const wallFoot = createMapItemFromMaterial(materials.wallFoot, 2 * TILE_SIZE, 4 * TILE_SIZE);
-      mapEditor.model.add(wallFoot);
+      mapEditor.add(wallFoot);
       const tiled1 = createMapItemFromMaterial(materials.tiledObject, 1 * TILE_SIZE, 1 * TILE_SIZE);
       tiled1.toggleCollider();
-      mapEditor.model.add(tiled1);
+      mapEditor.add(tiled1);
       const tiled2 = createMapItemFromMaterial(materials.tiledObject, 2 * TILE_SIZE, 1 * TILE_SIZE);
-      mapEditor.model.add(tiled2);
+      mapEditor.add(tiled2);
       const tiled3 = createMapItemFromMaterial(materials.tiledObject2, 2 * TILE_SIZE, 1 * TILE_SIZE);
-      mapEditor.model.add(tiled3);
+      mapEditor.add(tiled3);
       const tiled4 = createMapItemFromMaterial(materials.tiledObject2, 3 * TILE_SIZE, 2 * TILE_SIZE);
-      mapEditor.model.add(tiled4);
+      mapEditor.add(tiled4);
       const sticker1 = createMapItemFromMaterial(materials.sticker, 4 * TILE_SIZE, 6 * TILE_SIZE);
-      mapEditor.model.add(sticker1);
+      mapEditor.add(sticker1);
       const sticker2 = createMapItemFromMaterial(materials.sticker, 4 * TILE_SIZE, 2 * TILE_SIZE);
       sticker2.rotate(30, sticker2.left, sticker2.top);
-      mapEditor.model.add(sticker2);
+      mapEditor.add(sticker2);
+      window.sticker1 = sticker1;
+      window.sticker2 = sticker2;
       const spawn = createMapItemFromMaterial(materials.spawn, 2 * TILE_SIZE, 2 * TILE_SIZE);
-      mapEditor.model.add(spawn);
+      mapEditor.add(spawn);
       const impassable1 = createMapItemFromMaterial(materials.impassable, 4 * TILE_SIZE, 3 * TILE_SIZE);
-      mapEditor.model.add(impassable1);
-      const text1 = createText('Hello!', 500, 64, 100, 28);
-      mapEditor.model.add(text1);
+      mapEditor.add(impassable1);
+      const text1 = createText('Hello!', 500, 764, 100, 48);
+      mapEditor.add(text1);
       const backgroundImage = createBackgroundImageFromResource(resources.backgroundImage, 0, 0);
       backgroundImage.scale(0, 0, 960, 640);
-      mapEditor.model.add(backgroundImage);
+      mapEditor.add(backgroundImage);
       mapEditor.stopBatch();
 
       mapEditor.zoomToFit();
@@ -87,8 +90,8 @@ function App() {
       setShowMask(mapEditor.showMask);
       setShowEffect(mapEditor.showEffect);
       setAlignTile(mapEditor.alignTile);
-      setCanUndo(mapEditor.canUndo);
-      setCanRedo(mapEditor.canRedo);
+      setCanUndo(mapEditor.canUndo());
+      setCanRedo(mapEditor.canRedo());
       setTool(mapEditor.currentTool);
     });
     // debug
@@ -97,30 +100,30 @@ function App() {
     const handleZoom = (zoom) => {
       setZoom(zoom);
     };
-    mapEditor.on('zoom', handleZoom);
+    mapEditor.on(EVENT.zoom, handleZoom);
 
     const handleToggleMask = () => {
       setShowMask(mapEditor.showMask);
     };
-    mapEditor.on('toggleMask', handleToggleMask);
+    mapEditor.on(EVENT.toggleMask, handleToggleMask);
 
     const handleToggleAlignTile = () => {
       setAlignTile(mapEditor.alignTile);
     };
-    mapEditor.on('toggleAlignTile', handleToggleAlignTile);
+    mapEditor.on(EVENT.toggleAlignTile, handleToggleAlignTile);
 
     const handleToggleEffect = () => {
       setShowEffect(mapEditor.showEffect);
     };
-    mapEditor.on('toggleEffect', handleToggleEffect);
+    mapEditor.on(EVENT.toggleEffect, handleToggleEffect);
 
     const handleHistory = () => {
-      setCanUndo(mapEditor.canUndo);
-      setCanRedo(mapEditor.canRedo);
+      setCanUndo(mapEditor.canUndo());
+      setCanRedo(mapEditor.canRedo());
     };
-    mapEditor.on('history', handleHistory);
+    mapEditor.on(EVENT.history, handleHistory);
 
-    const handleSelected = ({ items }) => {
+    const handleSelectionChange = ({ items }) => {
       if (items.length === 1) {
         setSelected({ ...items[0] });
         mapItemRef.current = items[0];
@@ -129,55 +132,49 @@ function App() {
         mapItemRef.current = null;
       }
     };
-    mapEditor.on('selected', handleSelected);
-
-    const handleUnselected = () => {
-      setSelected(null);
-      mapItemRef.current = null;
-    };
-    mapEditor.on('unselected', handleUnselected);
+    mapEditor.on(EVENT.selectionChange, handleSelectionChange);
 
     const handleUpdate = ({ item }) => {
       if (item === mapItemRef.current) {
         setSelected({ ...item });
       }
     };
-    mapEditor.on('update', handleUpdate);
+    mapEditor.on(EVENT.update, handleUpdate);
+
     const handleToggleMaskPlayer = ({ mapItem }) => {
       setSelected({ ...mapItem });
     };
-    mapEditor.on('toggleMaskPlayer', handleToggleMaskPlayer);
+    mapEditor.on(EVENT.toggleMaskPlayer, handleToggleMaskPlayer);
 
     const handleContextMenu = ({ position }) => {
       setShowContextMenu(true);
       setContextMenuPosition(position);
     };
-    mapEditor.on('contextMenu', handleContextMenu);
-
-    const handleResize = throttle(() => {
-      const { clientWidth, clientHeight } = canvasWrapper.current;
-      mapEditor.view.setCanvasSize(clientWidth, clientHeight);
-    }, 300, { trailing: true });
-    window.addEventListener('resize', handleResize);
+    mapEditor.on(EVENT.contextMenu, handleContextMenu);
 
     const handleToolChange = ({ tool }) => {
       setTool(tool);
     };
-    mapEditor.on('toolChange', handleToolChange);
+    mapEditor.on(EVENT.toolChange, handleToolChange);
+
+    const handleResize = throttle(() => {
+      const { clientWidth, clientHeight } = canvasWrapper.current;
+      mapEditor.setCanvasSize(clientWidth, clientHeight);
+    }, 300, { trailing: true });
+    window.addEventListener('resize', handleResize);
 
     return () => {
-      mapEditor.off('zoom', handleZoom);
-      mapEditor.off('toggleMask', handleToggleMask);
-      mapEditor.off('toggleAlignTile', handleAlignTileChange);
-      mapEditor.off('toggleEffect', handleToggleEffect);
-      mapEditor.off('history', handleHistory);
-      mapEditor.off('selected', handleSelected);
-      mapEditor.off('unselected', handleUnselected);
-      mapEditor.off('update', handleUpdate);
-      mapEditor.off('toggleMaskPlayer', handleToggleMaskPlayer);
-      mapEditor.off('contextMenu', handleContextMenu);
+      mapEditor.off(EVENT.zoom, handleZoom);
+      mapEditor.off(EVENT.toggleMask, handleToggleMask);
+      mapEditor.off(EVENT.toggleAlignTile, handleAlignTileChange);
+      mapEditor.off(EVENT.toggleEffect, handleToggleEffect);
+      mapEditor.off(EVENT.history, handleHistory);
+      mapEditor.off(EVENT.selectionChange, handleSelectionChange);
+      mapEditor.off(EVENT.update, handleUpdate);
+      mapEditor.off(EVENT.toggleMaskPlayer, handleToggleMaskPlayer);
+      mapEditor.off(EVENT.contextMenu, handleContextMenu);
+      mapEditor.off(EVENT.toolChange, handleToolChange);
       window.removeEventListener('resize', handleResize);
-      mapEditor.off('toolChange', handleToolChange);
       mapEditor.dispose();
     };
   }, []);
@@ -190,14 +187,14 @@ function App() {
   const handleZoomIn = () => {
     if (!canZoomIn) return;
     const mapEditor = editorRef.current;
-    const zoom = (Math.round((mapEditor.view.zoom * 10)) * 10 + 10) / 100;
+    const zoom = (Math.round((mapEditor.zoom * 10)) * 10 + 10) / 100;
     mapEditor.zoomToCenter(zoom);
   };
 
   const handleZoomOut = () => {
     if (!canZoomOut) return;
     const mapEditor = editorRef.current;
-    const zoom = (Math.round((mapEditor.view.zoom * 10)) * 10 - 10) / 100;
+    const zoom = (Math.round((mapEditor.zoom * 10)) * 10 - 10) / 100;
     mapEditor.zoomToCenter(zoom);
   };
 
@@ -309,7 +306,7 @@ function App() {
             />
           </div>
           <div className="property">
-            {selected && <PropertyPannel mapItem={selected} mapItemRef={mapItemRef} />}
+            {selected && <PropertyPannel mapItem={selected} mapItemRef={mapItemRef} editorRef={editorRef} />}
           </div>
         </div>
       </div>
@@ -348,14 +345,29 @@ function ViewControl({ showEffect, showEffectDisabled, onShowEffectChange, align
   );
 }
 
-function PropertyPannel({ mapItem, mapItemRef }) {
+function PropertyPannel({ mapItem, mapItemRef, editorRef }) {
   if (mapItem.type === MAP_ITEM_TYPE.image) {
-    return <ImageDetail mapItem={mapItem} mapItemRef={mapItemRef} />;
+    return <ImageDetail mapItem={mapItem} mapItemRef={mapItemRef} editorRef={editorRef} />;
   } else if (mapItem.type === MAP_ITEM_TYPE.text) {
-    return <TextDetail mapItem={mapItem} mapItemRef={mapItemRef} />;
+    return <TextDetail mapItem={mapItem} mapItemRef={mapItemRef} editorRef={editorRef} />;
+  } else if (mapItem.type === MAP_ITEM_TYPE.tiledObject) {
+    return <TiledDetail mapItem={mapItem} mapItemRef={mapItemRef} editorRef={editorRef} />
   } else {
-    return <TiledDetail mapItem={mapItem} mapItemRef={mapItemRef} />
+    return <BaseDetail mapItem={mapItem} />
   }
+}
+
+function BaseDetail({ mapItem }) {
+  return (
+    <div className="detail">
+      <div>
+        <div>{mapItem.name}</div>
+        <div>
+          <img className="detail-image" src={mapItem.imageURL} />
+        </div>
+      </div>
+    </div>
+  );
 }
 
 function TiledDetail({ mapItem, mapItemRef }) {
@@ -388,10 +400,19 @@ function TiledDetail({ mapItem, mapItemRef }) {
   );
 }
 
-function ImageDetail({ mapItem, mapItemRef }) {
-  const opacity = mapItem.opacity * 100;
+function ImageDetail({ mapItem, mapItemRef, editorRef }) {
+  const [opacity, setOpacity] = useState(mapItem.opacity * 100);
+
+  useEffect(() => {
+    setOpacity(mapItem.opacity * 100);
+  }, [mapItem.opacity]);
 
   const handleOpacityChange = (val) => {
+    setOpacity(val);
+    editorRef.current.setViewByItem(mapItemRef.current, { opacity: val / 100 });
+  };
+
+  const handleChangeComplete = (val) => {
     mapItemRef.current.setOpacity(val / 100);
   };
 
@@ -409,6 +430,7 @@ function ImageDetail({ mapItem, mapItemRef }) {
           <Slider
             value={opacity}
             onChange={handleOpacityChange}
+            onChangeComplete={handleChangeComplete}
           />
         </div>
       </div>
@@ -425,10 +447,37 @@ function ImageDetail({ mapItem, mapItemRef }) {
   );
 }
 
-function TextDetail({ mapItem, mapItemRef }) {
-  const opacity = mapItem.opacity * 100;
+function TextDetail({ mapItem, mapItemRef, editorRef }) {
+  const fontSizeRef = useRef();
+  const lineHeightRef = useRef();
+  const [opacity, setOpacity] = useState(mapItem.opacity * 100);
+  const [color, setColor] = useState(mapItem.color);
+  const [fontSize, setFontSize] = useState(mapItem.fontSize);
+  const [lineHeight, setLineHeight] = useState(mapItem.lineHeight);
+
+  useEffect(() => {
+    setOpacity(mapItem.opacity * 100);
+  }, [mapItem.opacity]);
+
+  useEffect(() => {
+    setColor(mapItem.color);
+  }, [mapItem.color]);
+
+  useEffect(() => {
+    setFontSize(mapItem.fontSize);
+  }, [mapItem.fontSize]);
   
+
+  useEffect(() => {
+    setLineHeight(mapItem.lineHeight);
+  }, [mapItem.lineHeight]);
+
   const handleOpacityChange = (val) => {
+    setOpacity(val);
+    editorRef.current.setViewByItem(mapItemRef.current, { opacity: val / 100 });
+  };
+
+  const handleOpacityComplete = (val) => {
     mapItemRef.current.setOpacity(val / 100);
   };
 
@@ -440,16 +489,44 @@ function TextDetail({ mapItem, mapItemRef }) {
           <Slider
             value={opacity}
             onChange={handleOpacityChange}
+            onChangeComplete={handleOpacityComplete}
           />
         </div>
       </div>
       <div>
         <div>文字样式</div>
         <div>
-          <ColorPicker showText value={mapItem.color} onChange={(_, val) => mapItemRef.current.setColor(val)} />
+          <ColorPicker
+            disabledAlpha
+            value={color}
+            onChange={(_, hex) => {
+              setColor(hex);
+              editorRef.current.setViewByItem(mapItemRef.current, { color: hex });
+            }}
+            onChangeComplete={(color) => mapItemRef.current.setColor(color.toHexString()) }
+          />
         </div>
         <div>
-          <InputNumber min={9} value={mapItem.fontSize} onChange={(val) => mapItemRef.current.setFontSize(val)} />
+          <InputNumber
+            ref={fontSizeRef}
+            value={fontSize}
+            min={10}
+            max={64}
+            onChange={(val) => {
+              setFontSize(val);
+              if (val >= 10 && val <= 64) {
+                editorRef.current.setViewByItem(mapItemRef.current, { fontSize: val });
+              }
+            }}
+            onBlur={() => {
+              if (fontSize === null || fontSize < 10 || fontSize > 64) {
+                setFontSize(mapItem.fontSize);
+              } else {
+                mapItemRef.current.setFontSize(fontSize);
+              }
+            }}
+            onPressEnter={() => fontSizeRef.current.blur() }
+          />
         </div>
         <div>
           <ItalicOutlined
@@ -480,7 +557,22 @@ function TextDetail({ mapItem, mapItemRef }) {
           />
         </div>
         <div>
-          <InputNumber value={mapItem.lineHeight} onChange={(val) => mapItemRef.current.setLineHeight(val)} />
+          <InputNumber
+            ref={lineHeightRef}
+            value={lineHeight}
+            min={0}
+            placeholder={lineHeight === null ? (DEFAULT_LINE_HEIGHT * fontSize).toFixed(2) : ''}
+            onChange={(val) => {
+              setLineHeight(val);
+              if (val >= 10 && val <= 64) {
+                editorRef.current.setViewByItem(mapItemRef.current, { lineHeight: val });
+              }
+            }}
+            onBlur={() => {
+              mapItemRef.current.setLineHeight(lineHeight);
+            }}
+            onPressEnter={() => lineHeightRef.current.blur() }
+          />
         </div>
       </div>
       <div>

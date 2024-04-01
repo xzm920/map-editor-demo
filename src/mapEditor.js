@@ -1,10 +1,14 @@
 import { MapContainer } from './model/mapContainer';
-import { MapCanvas } from './view/mapCanvas';
 import { HistoryManager } from './controller/history';
 import { EventEmitter } from './eventEmitter';
-import { Selection } from './controller/selection';
-import { TOOL } from './constants';
+import { DESC_NON_EFFECT_LAYERS, LAYER, TILE_SIZE, TOOL } from './constants';
 import { ToolManager, ToolErase, ToolHand, ToolSelect, ToolText } from './controller/tool';
+import { Presenter } from './controller/presenter';
+import { createCanvas } from './view';
+import { MouseMiddle, MouseWheel } from './controller';
+import { ViewportManager } from './controller/viewportManager';
+import { EVENT } from './event';
+import { Selection } from './controller/selection';
 
 export class MapEditor extends EventEmitter {
   constructor(options) {
@@ -19,16 +23,35 @@ export class MapEditor extends EventEmitter {
     } = options;
 
     this.model = new MapContainer(width, height);
-    this.view = new MapCanvas({
-      mapContainer: this.model,
-      elem,
-      width,
-      height,
-      canvasWidth,
-      canvasHeight,
-    });
-    this.history = new HistoryManager(this.model);
+
+    // state
+    this.width = width;
+    this.height = height;
+    this.canvasWidth = canvasWidth;
+    this.canvasHeight = canvasHeight;
+
+    this.showMask = false;
+    this.showEffect = false;
+    this.alignTile = false;
+    this.alignThreshold = 4;
+    this.zoom = 1;
+    this.minZoom = 0.1;
+    this.maxZoom = 1.5;
+    this.translateX = 0;
+    this.translateY = 0;
+    this.panRestricted = true;
+    this.panInset = 100;
+
+    this.canvas = createCanvas(elem, canvasWidth, canvasHeight);
+    this.presenter = new Presenter(this);
     this.selection = new Selection(this);
+    this.isEditing = false;
+
+    this.viewportManager = new ViewportManager(this);
+    this.mouseWheel = new MouseWheel(this);
+    this.mouseMiddle = new MouseMiddle(this);
+
+    this.history = new HistoryManager(this);
 
     this.toolManager = new ToolManager(this);
     this.toolManager.registerTool(TOOL.select, ToolSelect);
@@ -40,96 +63,129 @@ export class MapEditor extends EventEmitter {
     this._unlisten = this._listen();
   }
 
-  select(items) {
-    this.selection.select(items);
+  get mapWidth() {
+    return this.width * TILE_SIZE;
   }
 
-  unselect() {
-    this.selection.unselect();
+  get mapHeight() {
+    return this.height * TILE_SIZE;
   }
 
-  getItemByPoint(point) {
-    return this.selection.getItemByPoint(point);
+  get bbox() {
+    return {
+      left: 0,
+      top: 0,
+      width: this.width * TILE_SIZE,
+      height: this.height * TILE_SIZE,
+    };
   }
 
   dispose() {
-    this.toolManager.stopTool();
-    this.view.dispose();
-    this.history.dispose();
     this._unlisten();
+    this.toolManager.stopTool();
+    this.mouseWheel.dispose();
+    this.mouseMiddle.dispose();
+    this.selection.dispose();
+    this.history.dispose();
+    this.presenter.dispose();
+    this.canvas.dispose();
+  }
+  
+  // model
+  add(mapItem) {
+    this.model.add(mapItem);
   }
 
-  _listen() {
-    const handleModelEvent = (type, event) => {
-      this.emit(type, event);
-    };
-    const handleViewEvent = (type, event) => {
-      this.emit(type, event);
-    };
-    const handleHistory = () => {
-      this.emit('history');
-    };
-
-    this.model.on('*', handleModelEvent);
-    this.view.on('*', handleViewEvent);
-    this.history.on('history', handleHistory);
-    return () => {
-      this.model.off('*', handleModelEvent);
-      this.view.off('*', handleViewEvent);
-      this.history.off('history', handleHistory);
-    };
+  remove(mapItem) {
+    this.model.remove(mapItem);
   }
 
-  get zoom() {
-    return this.view.zoom;
+  getIntersectItems(mapItem) {
+    return this.model.getIntersectItems(mapItem);
   }
 
-  get minZoom() {
-    return this.view.minZoom;
+  getItemByPoint(point) {
+    const descLayers = this.showMask ? [LAYER.effect] : DESC_NON_EFFECT_LAYERS;
+    return this.model.getItemByPoint(point, descLayers);
   }
 
-  get maxZoom() {
-    return this.view.maxZoom;
+  // selection
+  select(itemOrItems) {
+    this.selection.select(itemOrItems);
+  }
+  
+  unselect(itemOrItems) {
+    this.selection.unselect(itemOrItems);
+  }
+
+  resetSelection(itemOrItems) {
+    this.selection.reset(itemOrItems);
+  }
+  
+  clearSelection() {
+    this.selection.clear();
+  }
+
+  // view
+  getViewByItem(item) {
+    return this.presenter.getViewByItem(item);
+  }
+
+  setViewByItem(item, data) {
+    this.presenter.setViewByItem(item, data);
+  }
+
+  render() {
+    this.canvas.requestRenderAll();
+  }
+
+  setCanvasSize(canvasWidth, canvasHeight) {
+    this.viewportManager.resize(canvasWidth, canvasHeight);
+  }
+
+  zoomToPoint(zoom, left, top) {
+    this.viewportManager.zoomToPoint(zoom, left, top);
   }
 
   zoomToCenter(zoom) {
-    this.view.zoomToCenter(zoom);
+    this.viewportManager.zoomToCenter(zoom);
   }
 
   zoomToFit() {
-    this.view.zoomToFit();
+    this.viewportManager.zoomToFit();
   }
 
-  get showEffect() {
-    return this.view.showEffect;
+  relativePan(left, top) {
+    this.viewportManager.relativePan(left, top);
   }
 
   toggleEffect() {
-    this.view.toggleEffect();
-  }
-
-  get alignTile() {
-    return this.view.alignTile;
-  }
-
-  toggleAlignTile() {
-    this.view.toggleAlignTile();
-  }
-
-  get showMask() {
-    return this.view.showMask;
+    this.showEffect = !this.showEffect;
+    this.emit(EVENT.toggleEffect);
   }
 
   toggleMask() {
-    this.view.toggleMask();
+    this.showMask = !this.showMask;
+    this.emit(EVENT.toggleMask);
   }
 
-  get canUndo() {
-    return this.history.canUndo();
+  toggleAlignTile() {
+    this.alignTile = !this.alignTile;
+    this.emit(EVENT.toggleAlignTile);
   }
 
-  get canRedo() {
-    return this.history.canRedo();
+  setIsEditing(isEditing) {
+    this.isEditing = isEditing;
+    this.emit(EVENT.history);
+  }
+
+  // history
+  canUndo() {
+    return !this.isEditing && this.history.canUndo();
+  }
+
+  canRedo() {
+    return !this.isEditing && this.history.canRedo();
   }
 
   undo() {
@@ -152,18 +208,7 @@ export class MapEditor extends EventEmitter {
     this.history.abortBatch();
   }
 
-  add(mapItem) {
-    this.model.add(mapItem);
-  }
-
-  remove(mapItem) {
-    this.model.remove(mapItem);
-  }
-
-  getIntersectItems(mapItem) {
-    return this.model.getIntersectItems(mapItem);
-  }
-
+  // tool
   get currentTool() {
     return this.toolManager.current;
   }
@@ -174,5 +219,17 @@ export class MapEditor extends EventEmitter {
 
   stopTool() {
     this.toolManager.stopTool();
+  }
+
+  _listen() {
+    // 转发来自model的事件
+    const handleModelEvents = (type, eventData) => {
+      this.emit(type, eventData);
+    };
+
+    this.model.on('*', handleModelEvents);
+    return () => {
+      this.model.on('*', handleModelEvents);
+    };
   }
 }

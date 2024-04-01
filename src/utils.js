@@ -108,3 +108,11 @@ export function toIntegerPoint(point) {
     y: Math.round(point.y),
   };
 }
+
+export function isEmptyObject(object) {
+  return Object.keys(object).length === 0;
+}
+
+export function toFixed(num, precision = 7) {
+  return Number(num.toFixed(precision));
+}

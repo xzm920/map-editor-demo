@@ -1,6 +1,7 @@
 import { generateKeyBetween } from 'fractional-indexing';
 import { LAYER, TILE_SIZE } from '../constants';
 import { getBBox, isPointInRect, isPointInRotatedRect, isRectInRect, isRotatedRectIntersect } from '../geometry';
+import { EVENT } from '../event';
 
 export class MapLayer {
   constructor(width, height, zIndex) {
@@ -29,15 +30,8 @@ export class MapLayer {
     const descZOrders = this.zOrders.slice().reverse();
     for (const zOrder of descZOrders) {
       const mapItem = this.zOrderToItem.get(zOrder);
-      const rect = { left: mapItem.left, top: mapItem.top, width: mapItem.width, height: mapItem.height };
-      if (mapItem.angle === 0) {
-        if (isPointInRect(point, rect)) {
-          return mapItem;
-        }
-      } else {
-        if (isPointInRotatedRect(point, rect, mapItem.angle)) {
-          return mapItem;
-        }
+      if (isPointInRotatedRect(point, mapItem, mapItem.angle)) {
+        return mapItem;
       }
     }
     return null;
@@ -74,7 +68,7 @@ export class MapLayer {
 
   add(mapItem, emit = true) {
     if (emit) {
-      this.notify('before:modelChange');
+      this.notify(EVENT.beforeModelChange);
     }
     if (!mapItem.zOrder) {
       const highest = this.zOrders[this.zOrders.length - 1];
@@ -88,13 +82,13 @@ export class MapLayer {
     this.zOrderToItem.set(mapItem.zOrder, mapItem);
     mapItem.parent = this;
     if (emit) {
-      this.notify('add', { mapItem });
+      this.notify(EVENT.add, { item: mapItem });
     }
   }
 
   remove(mapItem, emit = true) {
     if (emit) {
-      this.notify('before:modelChange');
+      this.notify(EVENT.beforeModelChange);
     }
     const index = this.zOrders.indexOf(mapItem.zOrder);
     if (index === -1) return;
@@ -103,7 +97,7 @@ export class MapLayer {
     this.zOrderToItem.set(mapItem.zOrder, null);
     mapItem.parent = null;
     if (emit) {
-      this.notify('remove', { mapItem });
+      this.notify(EVENT.remove, { item: mapItem });
     }
   }
 
@@ -167,8 +161,8 @@ class OverlapLayer extends MapLayer {
       oldZOrder,
       newZOrder: zOrder,
     };
-    this.notify('before:modelChange');
-    this.notify('sortItem', data);
+    this.notify(EVENT.beforeModelChange);
+    this.notify(EVENT.sortItem, data);
   }
 
   getIntersectItems(mapItem) {
