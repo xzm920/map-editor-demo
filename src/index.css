@@ -6,6 +6,9 @@ body {
   user-select: none;
   color: #282c4a;
 }
+::-webkit-scrollbar {
+  display: none;
+}
 
 .app {
   height: 100dvh;
@@ -29,7 +32,8 @@ body {
   justify-content: stretch;
   overflow: hidden;
 }
-.material {
+.material-library {
+  overflow-y: auto;
   flex: none;
   width: 240px;
   filter: drop-shadow(2px 0 6px rgba(0,0,0,.04));
@@ -180,12 +184,12 @@ body {
 }
 
 /* 素材库 */
-.floor-list {
+.material-list {
   display: flex;
-  padding: 24px;
+  padding: 12px;
 }
 
-.floor {
+.material {
   flex: none;
   margin-right: 16px;
   margin-bottom: 16px;
@@ -193,11 +197,11 @@ body {
   height: 60px;
   cursor: pointer;
 }
-.floor:hover {
+.material:hover {
   outline: var(--hover-color) solid 2px;
   outline-offset: 2px;
 }
-.floor.active {
+.material.active {
   outline: var(--primary-color) solid 2px;
   outline-offset: 2px;
 }

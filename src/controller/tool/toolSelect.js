@@ -17,7 +17,7 @@ export class ToolSelect {
 
   _listen() {
     let isPanning = false;
-    let startPoint = null;
+    let downPoint = null;
     let startPos = null;
     let didMove = false;
     let downOnSelection = false;
@@ -33,10 +33,10 @@ export class ToolSelect {
 
       const { shiftKey } = e.e;
       const { selection } = this.mapEditor;
-      startPoint = e.absolutePointer;
+      downPoint = e.absolutePointer;
 
-      downOnSelection = selection.containsPoint(startPoint);
-      downItem = this.mapEditor.getItemByPoint(startPoint);
+      downOnSelection = selection.containsPoint(downPoint);
+      downItem = this.mapEditor.getItemByPoint(downPoint);
       const downOnSelected = this.mapEditor.selection.isSelected(downItem);
       
       if (shiftKey && downItem) {
@@ -69,11 +69,11 @@ export class ToolSelect {
       let left;
       let top;
       if (selection.isTiled()) {
-        left = startPos.x + toTiledCoord(movePoint.x) - toTiledCoord(startPoint.x);
-        top = startPos.y + toTiledCoord(movePoint.y) - toTiledCoord(startPoint.y);
+        left = startPos.x + toTiledCoord(movePoint.x) - toTiledCoord(downPoint.x);
+        top = startPos.y + toTiledCoord(movePoint.y) - toTiledCoord(downPoint.y);
       } else {
-        left = startPos.x + movePoint.x - startPoint.x;
-        top = startPos.y + movePoint.y - startPoint.y;
+        left = startPos.x + movePoint.x - downPoint.x;
+        top = startPos.y + movePoint.y - downPoint.y;
       }
       selection.move(left, top);
 
@@ -93,11 +93,11 @@ export class ToolSelect {
         let left;
         let top;
         if (selection.isTiled()) {
-          left = startPos.x + toTiledCoord(upPoint.x) - toTiledCoord(startPoint.x);
-          top = startPos.y + toTiledCoord(upPoint.y) - toTiledCoord(startPoint.y);
+          left = startPos.x + toTiledCoord(upPoint.x) - toTiledCoord(downPoint.x);
+          top = startPos.y + toTiledCoord(upPoint.y) - toTiledCoord(downPoint.y);
         } else {
-          left = startPos.x + upPoint.x - startPoint.x;
-          top = startPos.y + upPoint.y - startPoint.y;
+          left = startPos.x + upPoint.x - downPoint.x;
+          top = startPos.y + upPoint.y - downPoint.y;
         }
         selection.finishMove(left, top);
       } else if (!shiftKey) {
@@ -109,7 +109,7 @@ export class ToolSelect {
       }
 
       isPanning = false;
-      startPoint = null;
+      downPoint = null;
       startPos = null;
     };
 

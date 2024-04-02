@@ -2,13 +2,12 @@ import { createTiled } from "../../view";
 import { getTiledRectByPoints, shallowEqual, toTiledPoint } from "../../utils";
 import { isPointInRect, limitRectInRect } from "../../geometry";
 import { createSelection } from "../../view/selection";
-import { LAYER } from "../../constants";
 
 export class ToolFloor {
   constructor(mapEditor, options) {
     this.mapEditor = mapEditor;
-    
     this.material = options.material;
+
     this.floorView = createTiled({
       imageURL: this.material.url,
       left: 0,
@@ -17,40 +16,60 @@ export class ToolFloor {
       height: this.material.h,
     }, () => this.mapEditor.render());
     this.floorView.set({ opacity: 0.6 });
-
     this.selectionView = createSelection();
-
     this.mapEditor.presenter.addToolView(this.floorView);
 
     this._unlisten = this._listen();
   }
 
   dispose() {
-    this.mapEditor.presenter.removeToolView(this.floorView);
     this._unlisten();
+    
+    const toolView = this.floorView || this.selectionView;
+    this.mapEditor.presenter.removeToolView(toolView);
+  }
+
+  _addFloorView(point) {
+    this.mapEditor.presenter.removeToolView(this.selectionView);
+    const rect = { left: point.x, top: point.y, width: this.floorView.width, height: this.floorView.height }
+    this.floorView.set(rect);
+    this.mapEditor.presenter.addToolView(this.floorView);
+  }
+
+  _updateFloorView(point) {
+    this.mapEditor.presenter.updateToolView({ left: point.x, top: point.y });
+  }
+
+  _addSelectionView(rect) {
+    this.mapEditor.presenter.removeToolView(this.floorView);
+    this.selectionView.set(rect);
+    this.mapEditor.presenter.addToolView(this.selectionView);
+  }
+
+  _updateSelectionView(rect) {
+    rect = limitRectInRect(rect, this.mapEditor.bbox);
+    this.mapEditor.presenter.updateToolView(rect);
+  }
+
+  _addFloors(selectionRect) {
+    selectionRect = limitRectInRect(selectionRect, this.mapEditor.bbox);
+    this.mapEditor.startBatch();
+    this.mapEditor.model.batchAddOrReplaceFloors(this.material, selectionRect);
+    this.mapEditor.stopBatch();
   }
 
   _listen() {
     let isPanning = false;
-    let startPoint = null;
+    let downPoint = null;
     let lastMoveTiled = null;
     let lastMoveRect = null;
 
-    const getFloorRect = (point) => {
-      const { width, height } = this.floorView;
-      return { left: point.x, top: point.y, width, height };
-    };
-
     const handleMouseDown = (e) => {
-      startPoint = e.absolutePointer;
-      if (!isPointInRect(startPoint, this.mapEditor.bbox)) return;
+      downPoint = e.absolutePointer;
+      if (!isPointInRect(downPoint, this.mapEditor.bbox)) return;
 
-      this.mapEditor.presenter.removeToolView(this.floorView);
-      const rect = getTiledRectByPoints(startPoint, startPoint);
-      this.selectionView.set(rect);
-
-      this.mapEditor.presenter.addToolView(this.selectionView);
-
+      const downRect = getTiledRectByPoints(downPoint, downPoint);
+      this._addSelectionView(downRect);
       isPanning = true;
     };
     
@@ -58,20 +77,16 @@ export class ToolFloor {
       const movePoint = e.absolutePointer;
 
       if (isPanning) {
-        let moveRect = getTiledRectByPoints(startPoint, movePoint);
+        let moveRect = getTiledRectByPoints(downPoint, movePoint);
         if (lastMoveRect && shallowEqual(moveRect, lastMoveRect)) return;
         
-        moveRect = limitRectInRect(moveRect, this.mapEditor.bbox);
-        this.mapEditor.presenter.updateToolView(moveRect);
+        this._updateSelectionView(moveRect);
         lastMoveRect = moveRect;
       } else {
         const moveTiled = toTiledPoint(movePoint);
         if (lastMoveTiled && shallowEqual(moveTiled, lastMoveTiled)) return;
 
-        this.mapEditor.presenter.updateToolView({
-          left: moveTiled.x,
-          top: moveTiled.y,
-        });
+        this._updateFloorView(moveTiled);
         lastMoveTiled = moveTiled;
       }
     };
@@ -80,22 +95,15 @@ export class ToolFloor {
       const upPoint = e.absolutePointer;
 
       if (isPanning) {
-        this.mapEditor.presenter.removeToolView(this.selectionView);
         const upTiled = toTiledPoint(upPoint);
-        const floorRect = getFloorRect(upTiled);
-        this.floorView.set(floorRect);
-        this.mapEditor.presenter.addToolView(this.floorView);
+        this._addFloorView(upTiled);
 
-        let rect = getTiledRectByPoints(startPoint, upPoint);
-        rect = limitRectInRect(rect, this.mapEditor.bbox);
-        const floorLayer = this.mapEditor.model.getLayer(LAYER.floor);
-        this.mapEditor.startBatch();
-        floorLayer.batchAddOrReplace(this.material, rect);
-        this.mapEditor.stopBatch();
+        const selectionRect = getTiledRectByPoints(downPoint, upPoint);
+        this._addFloors(selectionRect);
       }
 
       isPanning = false;
-      startPoint = null;
+      downPoint = null;
       lastMoveRect = null;
       lastMoveTiled = null;
     };

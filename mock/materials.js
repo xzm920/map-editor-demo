@@ -32,7 +32,7 @@ materials.floor2 = {
 };
 
 materials.wallHead = {
-  "code": "dYwzVvUe87y2EKDfOOrfs",
+  "code": "dYwzVvUe87y2EKDfOOrfs-0",
   "name": "1MA墙头.png",
   "describe": "",
   "url": "https://dev-oss.vland.live/material/system/624ed36f4ff28daf5e79bb79/42eaaddbc1eb4be08f37790f2782d53d_1649333103.png",
@@ -48,7 +48,7 @@ materials.wallHead = {
 };
 
 materials.wallBody = {
-  "code": "dYwzVvUe87y2EKDfOOrfs",
+  "code": "dYwzVvUe87y2EKDfOOrfs-1",
   "name": "17MA石墙身.png",
   "describe": "",
   "url": "https://dev-oss.vland.live/material/system/624ed36f4ff28daf5e79bb79/03b2e71e22d247509e4dc06673c8a4ed_1649333103.png",
@@ -64,7 +64,7 @@ materials.wallBody = {
 };
 
 materials.wallFoot = {
-  "code": "dYwzVvUe87y2EKDfOOrfs",
+  "code": "dYwzVvUe87y2EKDfOOrfs-2",
   "name": "18MA石墙脚.png",
   "describe": "",
   "url": "https://dev-oss.vland.live/material/system/624ed36f4ff28daf5e79bb79/c6feb390a4464bc3a6be546c17469fb6_1649333103.png",
@@ -163,6 +163,26 @@ materials.sticker = {
       "images": []
   }
 };
+
+materials.sticker2 = {
+    "code": "Z5yhAJpzq8IiDvnuhLKyz",
+    "name": "Vland",
+    "describe": "",
+    "url": "https://dev-oss.vland.live/back/material/system/c4a32beee0a645c3baa6226df71c7a6f_1660802737.gif",
+    "w": 384,
+    "h": 384,
+    "layer": 5,
+    "obstacle": false,
+    "shelter": true,
+    "spin": {
+        "status": false,
+        "images": []
+    },
+    "node": {
+        "type": 0,
+        "images": []
+    }
+}
 
 materials.spawn = {
     "code": "g84EEr5lEQAQdFhHZ71Bb",

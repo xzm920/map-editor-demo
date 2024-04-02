@@ -17,6 +17,9 @@ export class ToolManager {
       this.stopTool();
     }
     const ToolCtor = this.toolMap.get(name);
+    if (!ToolCtor) {
+      throw Error(`Tool is not registered: ${name}`);
+    }
     this.current = name;
     this.currentTool = new ToolCtor(this.mapEditor, options);
 

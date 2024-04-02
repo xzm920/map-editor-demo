@@ -42,11 +42,12 @@ function pointsToBBox(points) {
   return { left, top, width, height };
 }
 
+// 左开右闭 [left, right) [top, bottom)
 export function isPointInRect(point, rect) {
   return point.x >= rect.left
     && point.y >= rect.top
-    && point.x <= rect.left + rect.width
-    && point.y <= rect.top + rect.height;
+    && point.x < rect.left + rect.width
+    && point.y < rect.top + rect.height;
 }
 
 export function isPointInRotatedRect(point, rect, angle) {

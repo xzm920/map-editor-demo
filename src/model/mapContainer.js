@@ -3,6 +3,7 @@ import { AvatarLayer, BackgroundLayer, EffectLayer, FloorLayer, FreeLayer, Tiled
 import { DESC_LAYERS, LAYER, TILE_SIZE, USER_LAYER } from '../constants';
 import { getMapItemCtor } from './mapItem';
 import { EVENT } from '../event';
+import { createMapItemFromMaterial } from './create';
 
 export class MapContainer extends EventEmitter {
   constructor(width, height) {
@@ -146,5 +147,48 @@ export class MapContainer extends EventEmitter {
 
   notify(event, data) {
     this.emit(event, data);
+  }
+
+  //
+  batchAddOrReplaceFloors(material, rect) {
+    if (material.layer !== USER_LAYER.floor) return;
+
+    const layer = this.getLayer(LAYER.floor);
+    layer.batchAddOrReplace(material, rect);
+  }
+
+  addOrReplaceWall(material, point) {
+    if (material.layer !== USER_LAYER.wall) return;
+
+    for (let zIndex of [LAYER.wallBehind, LAYER.wallFront]) {
+      const layer = this.getLayer(zIndex); 
+      let existed = layer.getItemByPoint(point);
+      if (existed) {
+        layer.remove(existed);
+      }
+    }
+
+    const zIndex = material.shelter ? LAYER.wallFront : LAYER.wallBehind;
+    const layer = this.getLayer(zIndex);
+    const newItem = createMapItemFromMaterial(material, point.x, point.y);
+    layer.add(newItem);
+  }
+
+  addTiled(material, point) {
+    if (material.layer !== USER_LAYER.object) return;
+
+    const zIndex = material.shelter ? LAYER.objAboveAvatar : LAYER.objBelowAvatar;
+    const layer = this.getLayer(zIndex);
+    const newItem = createMapItemFromMaterial(material, point.x, point.y);
+    layer.add(newItem);
+  }
+
+  addImage(material, point) {
+    if (material.layer !== USER_LAYER.freeObject) return;
+
+    const zIndex = material.shelter ? LAYER.freeObjAboveAvatar : LAYER.freeObjBelowAvatar;
+    const layer = this.getLayer(zIndex);
+    const newItem = createMapItemFromMaterial(material, point.x, point.y);
+    layer.add(newItem);
   }
 }

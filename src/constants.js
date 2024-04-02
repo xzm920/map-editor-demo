@@ -57,6 +57,11 @@ export const TOOL = {
   erase: 'erase',
   text: 'text',
   floor: 'floor',
+  wall: 'wall',
+  tiled: 'tiled',
+  image: 'image',
+  spawn: 'spawn',
+  impassable: 'impassable',
 };
 
 export const IMPASSABLE_URL = 'https://dev-oss.vland.live/material/system/65433e2848c544d1ab0c43a51043f095_1649646689.png';

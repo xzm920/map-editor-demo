@@ -10,6 +10,9 @@ import { ViewportManager } from './controller/viewportManager';
 import { EVENT } from './event';
 import { Selection } from './controller/selection';
 import { ToolFloor } from './controller/tool/toolFloor';
+import { ToolWall } from './controller/tool/toolWall';
+import { ToolTiled } from './controller/tool/toolTiled';
+import { ToolImage } from './controller/tool/toolImage';
 
 export class MapEditor extends EventEmitter {
   constructor(options) {
@@ -60,6 +63,9 @@ export class MapEditor extends EventEmitter {
     this.toolManager.registerTool(TOOL.erase, ToolErase);
     this.toolManager.registerTool(TOOL.text, ToolText);
     this.toolManager.registerTool(TOOL.floor, ToolFloor);
+    this.toolManager.registerTool(TOOL.wall, ToolWall);
+    this.toolManager.registerTool(TOOL.tiled, ToolTiled);
+    this.toolManager.registerTool(TOOL.image, ToolImage);
     this.toolManager.invokeTool(TOOL.select);
 
     this._unlisten = this._listen();
