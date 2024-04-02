@@ -9,6 +9,7 @@ import { MouseMiddle, MouseWheel } from './controller';
 import { ViewportManager } from './controller/viewportManager';
 import { EVENT } from './event';
 import { Selection } from './controller/selection';
+import { ToolFloor } from './controller/tool/toolFloor';
 
 export class MapEditor extends EventEmitter {
   constructor(options) {
@@ -33,7 +34,7 @@ export class MapEditor extends EventEmitter {
     this.showMask = false;
     this.showEffect = false;
     this.alignTile = false;
-    this.alignThreshold = 4;
+    this.alignThreshold = 10;
     this.zoom = 1;
     this.minZoom = 0.1;
     this.maxZoom = 1.5;
@@ -58,6 +59,7 @@ export class MapEditor extends EventEmitter {
     this.toolManager.registerTool(TOOL.hand, ToolHand);
     this.toolManager.registerTool(TOOL.erase, ToolErase);
     this.toolManager.registerTool(TOOL.text, ToolText);
+    this.toolManager.registerTool(TOOL.floor, ToolFloor);
     this.toolManager.invokeTool(TOOL.select);
 
     this._unlisten = this._listen();
@@ -213,8 +215,8 @@ export class MapEditor extends EventEmitter {
     return this.toolManager.current;
   }
 
-  invokeTool(name) {
-    this.toolManager.invokeTool(name);
+  invokeTool(name, options) {
+    this.toolManager.invokeTool(name, options);
   }
 
   stopTool() {

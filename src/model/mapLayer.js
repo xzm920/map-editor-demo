@@ -2,6 +2,7 @@ import { generateKeyBetween } from 'fractional-indexing';
 import { LAYER, TILE_SIZE } from '../constants';
 import { getBBox, isPointInRect, isPointInRotatedRect, isRectInRect, isRotatedRectIntersect } from '../geometry';
 import { EVENT } from '../event';
+import { createMapItemFromMaterial } from './create';
 
 export class MapLayer {
   constructor(width, height, zIndex) {
@@ -18,7 +19,7 @@ export class MapLayer {
   }
 
   getItems() {
-    return this.zOrders.map((zOrder) => this.zOrderToItem.get(zOrder));
+    return this.zOrders.map((zOrder) => this.zOrderToItem.get(zOrder)).filter((v) => !!v);
   }
 
   getItemByZOrder(zOrder) {
@@ -127,6 +128,21 @@ export class FloorLayer extends MapLayer {
       return item !== mapItem && item.left === left && item.top === top;
     });
     return !existed;
+  }
+
+  batchAddOrReplace(material, rect) {
+    const items = this.getItems();
+    for (let item of items) {
+      if (isRectInRect(item, rect)) {
+        this.remove(item);
+      }
+    }
+    for (let top = rect.top; top < rect.top + rect.height; top += TILE_SIZE) {
+      for (let left = rect.left; left < rect.left + rect.width; left += TILE_SIZE) {
+        const item = createMapItemFromMaterial(material, left, top);
+        this.add(item);
+      }
+    }
   }
 }
 

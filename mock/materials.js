@@ -15,6 +15,22 @@ materials.floor = {
   },
 };
 
+materials.floor2 = {
+    "code": "voZXzdK4yJLShc1UfqmaF",
+    "name": "原木地板1",
+    "describe": "",
+    "url": "https://dev-oss.vland.live/material/system/8b5a6d3711c84b6cbd8a285c541edd09_1649325180.png",
+    "w": 64,
+    "h": 64,
+    "layer": 4,
+    "obstacle": false,
+    "shelter": false,
+    "spin": {
+        "status": false,
+        "images": []
+    },
+};
+
 materials.wallHead = {
   "code": "dYwzVvUe87y2EKDfOOrfs",
   "name": "1MA墙头.png",

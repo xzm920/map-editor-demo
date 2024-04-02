@@ -45,3 +45,10 @@ export const activeSelectionOptions = {
   cornerStrokeColor: THEME.primaryColor,
   hasControls: true,
 };
+
+export const simpleOptions = {
+  selectable: false,
+  evented: false,
+  hasControls: false,
+  objectCaching: false,
+};

@@ -1,6 +1,7 @@
 
 body {
   --primary-color: #8f7ef4;
+  --hover-color: #b9adff;
   margin: 0;
   user-select: none;
   color: #282c4a;
@@ -176,4 +177,27 @@ body {
 }
 .head-left .icon-button {
   margin-right: 8px;
+}
+
+/* 素材库 */
+.floor-list {
+  display: flex;
+  padding: 24px;
+}
+
+.floor {
+  flex: none;
+  margin-right: 16px;
+  margin-bottom: 16px;
+  width: 60px;
+  height: 60px;
+  cursor: pointer;
+}
+.floor:hover {
+  outline: var(--hover-color) solid 2px;
+  outline-offset: 2px;
+}
+.floor.active {
+  outline: var(--primary-color) solid 2px;
+  outline-offset: 2px;
 }

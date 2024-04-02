@@ -1,3 +1,4 @@
+import { clamp } from "lodash";
 import { EVENT } from "../event";
 
 export class ViewportManager {
@@ -51,11 +52,12 @@ export class ViewportManager {
   }
 
   zoomToFit() {
-    const { canvasWidth, canvasHeight, mapWidth, mapHeight, zoom, translateX, translateY } = this.mapEditor;
+    const { canvasWidth, canvasHeight, mapWidth, mapHeight, zoom, minZoom, maxZoom, translateX, translateY } = this.mapEditor;
 
     const scaleX = canvasWidth / mapWidth;
     const scaleY = canvasHeight / mapHeight;
-    const newZoom = Math.min(scaleX, scaleY);
+    let newZoom = Math.min(scaleX, scaleY);
+    newZoom = clamp(newZoom, minZoom, maxZoom);
     const newTranslateX = (canvasWidth - mapWidth * newZoom) / 2;
     const newTranslateY = (canvasHeight - mapHeight * newZoom) / 2;
 

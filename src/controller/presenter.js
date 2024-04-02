@@ -68,6 +68,7 @@ export class Presenter {
 
   updateToolView(options) {
     this.toolView.set(options);
+    this.toolView.setCoords();
     this._render();
   }
 
@@ -166,8 +167,14 @@ export class Presenter {
         this.impassableItemToObject.set(item, impassableRect);
       }
     
-      this._updateObjects();
-      this._render();
+      if (!this._isScheduledAdd) {
+        this._isScheduledAdd = true;
+        setTimeout(() => {
+          this._isScheduledAdd = false;
+          this._updateObjects();
+          this._render();
+        });
+      }
     };
 
     const handleRemove = ({ item }) => {
@@ -183,8 +190,14 @@ export class Presenter {
         this.impassableItemToObject.delete(item);
       }
 
-      this._updateObjects();
-      this._render();
+      if (!this._isScheduledRemove) {
+        this._isScheduledRemove = true;
+        setTimeout(() => {
+          this._isScheduledRemove = false;
+          this._updateObjects();
+          this._render();
+        });
+      }
     };
 
     const handleUpdate = ({ item }) => {

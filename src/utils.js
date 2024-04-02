@@ -57,15 +57,16 @@ export function shallowEqual(objA, objB) {
 }
 
 // TODO: move geometry related util functions to geometry.js
-export function toTiledPoint(point) {
+export function toTiledPoint(point, ceil = false) {
   return {
-    x: toTiledCoord(point.x),
-    y: toTiledCoord(point.y),
+    x: toTiledCoord(point.x, ceil),
+    y: toTiledCoord(point.y, ceil),
   };
 }
 
-export function toTiledCoord(x) {
+export function toTiledCoord(x, ceil = false) {
   if (x % TILE_SIZE === 0) return x;
+  if (ceil) return Math.ceil(x / TILE_SIZE) * TILE_SIZE;
   return Math.floor(x / TILE_SIZE) * TILE_SIZE;
 }
 
@@ -115,4 +116,18 @@ export function isEmptyObject(object) {
 
 export function toFixed(num, precision = 7) {
   return Number(num.toFixed(precision));
+}
+
+export function getTiledRectByPoints(point1, point2) {
+  const tl = {
+    x: Math.min(point1.x, point2.x),
+    y: Math.min(point1.y, point2.y)
+  };
+  const br = {
+    x: Math.max(point1.x, point2.x),
+    y: Math.max(point1.y, point2.y)
+  };
+  const { x: left, y: top } = toTiledPoint(tl);
+  const { x: right, y: bottom } = toTiledPoint(br, true);
+  return { left, top, width: right - left, height: bottom - top };
 }

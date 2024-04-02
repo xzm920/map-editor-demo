@@ -1,15 +1,15 @@
 import { fabric } from "fabric";
 import { TILE_SIZE } from "../constants";
 import { fetchImage } from "../utils";
+import { simpleOptions } from "./options";
 
 export function createGrid(width, height, onLoad) {
   const grid = new fabric.Image(null, {
+    ...simpleOptions,
     left: -0.5,
     top: -0.5,
     width: TILE_SIZE * width + 1,
     height: TILE_SIZE * height + 1,
-    selectable: false,
-    evented: false,
   });
 
   const url = createGridSVGUrl(width, height);

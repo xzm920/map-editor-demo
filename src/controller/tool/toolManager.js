@@ -12,13 +12,13 @@ export class ToolManager {
     this.toolMap.set(name, ToolCtor);
   }
 
-  invokeTool(name) {
+  invokeTool(name, options) {
     if (this.current) {
       this.stopTool();
     }
     const ToolCtor = this.toolMap.get(name);
     this.current = name;
-    this.currentTool = new ToolCtor(this.mapEditor);
+    this.currentTool = new ToolCtor(this.mapEditor, options);
 
     this.mapEditor.emit(EVENT.toolChange, { tool: this.current });
   }

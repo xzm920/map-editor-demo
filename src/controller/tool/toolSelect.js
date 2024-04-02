@@ -26,6 +26,7 @@ export class ToolSelect {
     const handleMouseDown = (e) => {
       if (e.transform && e.transform.action !== 'drag') return;
       
+      // TODO:
       if (e.target instanceof fabric.IText && e.target.isEditing) return;
 
       didMove = false;
