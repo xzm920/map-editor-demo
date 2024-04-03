@@ -1,5 +1,4 @@
 import { EVENT } from '../../event';
-import { shallowEqual } from '../../utils';
 import { AddCommand } from './addCommand';
 import { RemoveCommand } from './removeCommand';
 import { SortItemCommand } from './sortItemCommand';
@@ -15,7 +14,6 @@ export class HistoryManager {
     this.redoStack = [];
     this._isBatching = false;
     this._batchCommands = [];
-    this.mergeThreshold = 1000;
     this._lastCommandTime = null;
     this._isBusy = false;
 
@@ -42,10 +40,10 @@ export class HistoryManager {
       this._pushCommand(command);
     };
 
-    const handleUpdate = ({ item, changes, merge }) => {
+    const handleUpdate = ({ item, changes }) => {
       if (this._isBusy) return;
 
-      const command = new UpdateCommand(item, changes, merge);
+      const command = new UpdateCommand(item, changes);
       this._pushCommand(command);
     };
 
@@ -126,30 +124,7 @@ export class HistoryManager {
 
   _pushCommand(command) {
     const currentStack = this._isBatching ? this._batchCommands : this.undoStack;
-
-    // 处理合并
-    const prevCommand = currentStack[currentStack.length - 1];
-    if (prevCommand && this._shouldMerge(prevCommand, command)) {
-      prevCommand.mergeCommand(command);
-      this._lastCommandTime = Date.now();
-      return;
-    }
-
     currentStack.push(command);
-    this._lastCommandTime = Date.now();
-  }
-
-  _shouldMerge(prevCommand, command) {
-    return (this._isBatching || Date.now() - this._lastCommandTime <= this.mergeThreshold)
-      && prevCommand instanceof UpdateCommand
-      && command instanceof UpdateCommand
-      && prevCommand.merge
-      && command.merge
-      && prevCommand.item === command.item
-      && shallowEqual(
-        prevCommand.changes.map((v) => v.key),
-        command.changes.map((v) => v.key)
-      );
   }
 
   _flushBatchCommands() {

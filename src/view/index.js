@@ -10,3 +10,4 @@ export * from './mask';
 export * from './text';
 export * from './tiled';
 export * from './create';
+export * from './notAllowed';

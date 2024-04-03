@@ -47,6 +47,7 @@ export const activeSelectionOptions = {
 };
 
 export const simpleOptions = {
+  strokeWidth: 0,
   selectable: false,
   evented: false,
   hasControls: false,

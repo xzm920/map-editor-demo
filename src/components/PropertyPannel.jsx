@@ -264,7 +264,7 @@ function TextDetail({ selected }) {
           <InputNumber
             ref={lineHeightRef}
             value={lineHeight}
-            min={0}
+            min={1}
             placeholder={lineHeight === null ? (DEFAULT_LINE_HEIGHT * fontSize).toFixed(2) : ''}
             onChange={(val) => {
               setLineHeight(val);

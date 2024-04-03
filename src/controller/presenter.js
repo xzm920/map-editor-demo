@@ -1,6 +1,6 @@
 import { fabric } from 'fabric';
-import { ASC_LAYERS, DEFAULT_LINE_HEIGHT, LAYER, MAP_ITEM_TYPE } from '../constants';
-import { createActiveSelection, createBackgroundColor, createGrid, createImpassableRect, createMask, getItemViewCreator } from '../view';
+import { ASC_LAYERS, DEFAULT_LINE_HEIGHT, EFFECT, LAYER, MAP_ITEM_TYPE } from '../constants';
+import { createActiveSelection, createBackgroundColor, createGrid, createImpassableRect, createMask, createNotAllowed, getItemViewCreator, updateNotAllowed } from '../view';
 import { EVENT } from '../event';
 import { getBBox, isRectInRect } from '../geometry';
 
@@ -21,6 +21,7 @@ export class Presenter {
     this.mask = createMask(width, height);
     // TODO: 移出presenter
     this.toolView = null;
+    this.notAllowed = null;
 
     this.canvas.add(this.backgroundColor);
     this.canvas.add(this.grid);
@@ -47,6 +48,7 @@ export class Presenter {
     if (objecct) {
       const options = itemToViewOptions({ ...item, ...data });
       objecct.set(options);
+      this._handleNotAllowed(objecct);
       this._render();
     }
   }
@@ -85,6 +87,16 @@ export class Presenter {
         if (item.isCollider) {
           const impassableObject = this.impassableItemToObject.get(item);
           impassableObjects.push(impassableObject);
+          impassableObject.set({ opacity: this.mapEditor.showMask ? 0.6 : 0.5 });
+          if (this.mapEditor.activeEffect === EFFECT.impassable) {
+            impassableObject.set({ opacity: 1 });
+          }
+        }
+        if (zIndex === LAYER.effect) {
+          object.set({ opacity: this.mapEditor.showMask ? 0.6 : 0.5 });
+          if (item.name === this.mapEditor.activeEffect) {
+            object.set({ opacity: 1 });
+          }
         }
       });
     };
@@ -104,6 +116,10 @@ export class Presenter {
 
     if (this.toolView) {
       objects.push(this.toolView);
+    }
+
+    if (this.notAllowed) {
+      objects.push(this.notAllowed);
     }
     
     this.canvas._objects = objects;
@@ -204,6 +220,10 @@ export class Presenter {
       const object = this.itemToObject.get(item);
       this._scheduleNewSelection(object);
       const options = itemToViewOptions(item);
+      if (object.isEditing) {
+        delete options.text;
+        delete options.height;
+      }
       object.set(options);
 
       let impassableRect = this.impassableItemToObject.get(item);
@@ -317,9 +337,18 @@ export class Presenter {
       if (!mapItem) return;
 
       const mapBound = this.mapEditor.model.bbox;
-      const bound = getBBox({left: target.left, top: target.top, width: target.width, height: target.height}, target.angle);
+      const rect = {
+        left: target.left,
+        top: target.top,
+        width: target.width * target.scaleX,
+        height: target.height * target.scaleY,
+      };
+      const bound = getBBox(rect, target.angle);
       if (!isRectInRect(bound, mapBound)) {
-        // TODO: revert move
+        const options = itemToViewOptions(mapItem);
+        target.set(options);
+        this._removeNotAllowed();
+        this._render();
         return;
       }
 
@@ -336,53 +365,100 @@ export class Presenter {
       }
     };
     
-    const handleObjectScaling = () => {
-      // TODO: 
+    const handleObjectScaling = (e) => {
+      this._handleNotAllowed(e.target);
     };
 
-    const handleObjectRotating = () => {
-      // TODO:
+    const handleObjectRotating = (e) => {
+      this._handleNotAllowed(e.target);
     };
 
-    const handleObjectResizing = () => {
-      // TODO:
+    const handleObjectResizing = (e) => {
+      this._handleNotAllowed(e.target);
     }
 
     const handleTextEditingEntered = () => {
       this.mapEditor.setIsEditing(true);
-      //
     };
 
     const handleTextChanged = (e) => {
-      const item = this.objectToItem.get(e.target);
-      if (item) {
-        const { text, height } = e.target;
-        item.setText(text, height);
-      }
+      this._handleNotAllowed(e.target);
     };
 
-    const handleTextEditingExited = () => {
+    const handleTextEditingExited = (e) => {
       this.mapEditor.setIsEditing(false);
 
-      //
+      const { text, height } = e.target;
+      const item = this.objectToItem.get(e.target);
+      if (item) {
+        const rect = {
+          left: item.left,
+          top: item.top,
+          width: item.width,
+          height,
+        };
+        const bbox = getBBox(rect, item.angle);
+        if (isRectInRect(bbox, this.mapEditor.bbox)) {
+          item.setText(text, height);
+        } else {
+          e.target.set({ text: item.text, height: item.height });
+          this._removeNotAllowed();
+          this._render();
+        }
+      }
     };
 
     this.mapEditor.canvas.on('object:modified', handleObjectModified);
     this.mapEditor.canvas.on('object:scaling', handleObjectScaling);
     this.mapEditor.canvas.on('object:rotating', handleObjectRotating);
     this.mapEditor.canvas.on('object:resizing', handleObjectResizing);
-    this.mapEditor.canvas.on('text:changed', handleTextChanged);
     this.mapEditor.canvas.on('text:editing:entered', handleTextEditingEntered);
+    this.mapEditor.canvas.on('text:changed', handleTextChanged);
     this.mapEditor.canvas.on('text:editing:exited', handleTextEditingExited);
     return () => {
       this.mapEditor.canvas.off('object:modified', handleObjectModified);
       this.mapEditor.canvas.off('object:scaling', handleObjectScaling);
-      this.mapEditor.canvas.on('object:rotating', handleObjectRotating);
+      this.mapEditor.canvas.off('object:rotating', handleObjectRotating);
       this.mapEditor.canvas.off('object:resizing', handleObjectResizing);
-      this.mapEditor.canvas.off('text:changed', handleTextChanged);
       this.mapEditor.canvas.off('text:editing:exited', handleTextEditingExited);
-      this.mapEditor.canvas.on('text:editing:entered', handleTextEditingEntered);
+      this.mapEditor.canvas.off('text:changed', handleTextChanged);
+      this.mapEditor.canvas.off('text:editing:entered', handleTextEditingEntered);
     };
+  }
+
+  _handleNotAllowed(object) {
+    const bbox = _getBBoxOfObject(object);
+      if (isRectInRect(bbox, this.mapEditor.bbox)) {
+        this._removeNotAllowed(object);
+      } else {
+        this._addOrUpdateNotAllowed(object);
+      }
+  }
+
+  _addOrUpdateNotAllowed(object) {
+    const options = {
+      left: object.left,
+      top: object.top,
+      width: object.width * object.scaleX,
+      height: object.height * object.scaleY,
+      angle: object.angle,
+    };
+    if (!this.notAllowed) {
+      this.notAllowed = createNotAllowed(options, () => this._render());
+      this.canvas.add(this.notAllowed);
+      this._updateObjects();
+    } else {
+      updateNotAllowed(this.notAllowed, options);
+    }
+    this._render();
+  }
+
+  _removeNotAllowed() {
+    if (!this.notAllowed) return;
+    this.canvas.remove(this.notAllowed);
+    this.notAllowed = null;
+    this._updateObjects();
+    this._render();
   }
 
   _updateMask() {
@@ -502,4 +578,14 @@ function itemToImpassableOptions(item) {
     width: item.width,
     height: item.height,
   };
+}
+
+function _getBBoxOfObject(object) {
+  const rect = {
+    left: object.left,
+    top: object.top,
+    width: object.width * object.scaleX,
+    height: object.height * object.scaleY,
+  };
+  return getBBox(rect, object.angle);
 }

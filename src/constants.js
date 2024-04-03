@@ -87,3 +87,8 @@ export const SELECTION = {
   single: 'single',
   multiple: 'multiple',
 };
+
+export const EFFECT = {
+  spawn: '出生点',
+  impassable: '禁行区域',
+};

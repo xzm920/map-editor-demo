@@ -94,8 +94,31 @@ export class Selection {
   move(left, top) {
     [left, top] = this._transformPos(left, top);
     const movingBbox = { ...this.bbox, left, top };
-
     this.mapEditor.emit(EVENT.selectionMove, { pos: this._getViewPos(movingBbox) });
+  }
+
+  finishMove(left, top) {
+    [left, top] = this._transformPos(left, top);
+
+    this.mapEditor.startBatch();
+    this._isBusy = true;
+    try {
+      for (let item of this.items) {
+        const { offsetX, offsetY } = this.itemOffsetMap.get(item);
+        const itemLeft = toFixed(left + offsetX);
+        const itemTop = toFixed(top + offsetY);
+        item.move(itemLeft, itemTop);
+      }
+    } catch (err) {
+      this._isBusy = false;
+      this.mapEditor.abortBatch();
+      this.move(this.bbox.left, this.bbox.top);
+      return;
+    }
+    this._isBusy = false;
+    this.mapEditor.stopBatch();
+
+    this._updateSelection();
   }
 
   _getViewPos(bbox) {
@@ -139,22 +162,6 @@ export class Selection {
     }
 
     return [left, top];
-  }
-
-  finishMove(left, top) {
-    [left, top] = this._transformPos(left, top);
-
-    this.mapEditor.startBatch();
-    this._isBusy = true;
-    for (let item of this.items) {
-      const { offsetX, offsetY } = this.itemOffsetMap.get(item);
-      const itemLeft = toFixed(left + offsetX);
-      const itemTop = toFixed(top + offsetY);
-      item.move(itemLeft, itemTop);
-    }
-    this._isBusy = false;
-    this.mapEditor.stopBatch();
-    this._updateSelection();
   }
 
   _updateSelection() {

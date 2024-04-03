@@ -64,8 +64,10 @@ function MaterialList({ materials, tool, title}) {
     setMaterial(material);
     if (material.layer === USER_LAYER.effect) {
       editor.setMask(true);
+      editor.setActiveEffect(material.name);
     } else {
       editor.setMask(false);
+      editor.setActiveEffect(null);
     }
     editor.invokeTool(tool, { material });
   };

@@ -47,6 +47,7 @@ export class MapEditor extends EventEmitter {
     this.translateY = 0;
     this.panRestricted = true;
     this.panInset = 100;
+    this.activeEffect = null;
 
     this.canvas = createCanvas(elem, canvasWidth, canvasHeight);
     this.presenter = new Presenter(this);
@@ -189,6 +190,10 @@ export class MapEditor extends EventEmitter {
   setIsEditing(isEditing) {
     this.isEditing = isEditing;
     this.emit(EVENT.history);
+  }
+
+  setActiveEffect(effectName) {
+    this.activeEffect = effectName;
   }
 
   // history

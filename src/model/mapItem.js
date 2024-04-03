@@ -76,7 +76,7 @@ export class MapItem {
     }
   }
 
-  update(patch, merge = false) {
+  update(patch) {
     if (isEmptyObject(patch)) return;
 
     this.notify(EVENT.beforeModelChange);
@@ -88,9 +88,6 @@ export class MapItem {
       patch,
       changes,
     };
-    if (merge) {
-      data.merge = true;
-    }
     this.notify(EVENT.update, data);
   }
 

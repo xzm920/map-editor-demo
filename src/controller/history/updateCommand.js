@@ -1,23 +1,7 @@
 export class UpdateCommand {
-  constructor(item, changes, merge = false) {
+  constructor(item, changes) {
     this.item = item;
     this.changes = changes;
-    this.merge = merge;
-  }
-
-  mergeCommand(nextCommand) {
-    const changesMap = this.changes.reduce((map, item) => {
-      map[item.key] = item;
-      return map;
-    }, {});
-
-    for (let change of nextCommand.changes) {
-      if (change.key in changesMap) {
-        changesMap[change.key].next = change.next;
-      } else {
-        this.changes.push(change);
-      }
-    }
   }
 
   execute() {
