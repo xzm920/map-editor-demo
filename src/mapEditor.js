@@ -13,6 +13,8 @@ import { ToolFloor } from './controller/tool/toolFloor';
 import { ToolWall } from './controller/tool/toolWall';
 import { ToolTiled } from './controller/tool/toolTiled';
 import { ToolImage } from './controller/tool/toolImage';
+import { MouseSpace } from './controller/mouseSpace';
+import { KeyboardShortcuts } from './controller/keyboardShortcuts';
 
 export class MapEditor extends EventEmitter {
   constructor(options) {
@@ -54,6 +56,8 @@ export class MapEditor extends EventEmitter {
     this.viewportManager = new ViewportManager(this);
     this.mouseWheel = new MouseWheel(this);
     this.mouseMiddle = new MouseMiddle(this);
+    this.mouseSpace = new MouseSpace(this);
+    this.keyboardShortcuts = new KeyboardShortcuts(this);
 
     this.history = new HistoryManager(this);
 
@@ -172,8 +176,8 @@ export class MapEditor extends EventEmitter {
     this.emit(EVENT.toggleEffect);
   }
 
-  toggleMask() {
-    this.showMask = !this.showMask;
+  setMask(showMask) {
+    this.showMask = showMask;
     this.emit(EVENT.toggleMask);
   }
 

@@ -1,10 +1,12 @@
 import { EVENT } from "../../event";
+import { shallowEqual } from "../../utils";
 
 export class ToolManager {
   constructor(mapEditor) {
     this.mapEditor = mapEditor;
     this.toolMap = new Map();
     this.current = null;
+    this.currentOptions = {};
     this.currentTool = null;
   }
 
@@ -12,7 +14,9 @@ export class ToolManager {
     this.toolMap.set(name, ToolCtor);
   }
 
-  invokeTool(name, options) {
+  invokeTool(name, options = {}) {
+    if (name === this.current && shallowEqual(options, this.currentOptions)) return;
+
     if (this.current) {
       this.stopTool();
     }
@@ -21,6 +25,7 @@ export class ToolManager {
       throw Error(`Tool is not registered: ${name}`);
     }
     this.current = name;
+    this.currentOptions = options;
     this.currentTool = new ToolCtor(this.mapEditor, options);
 
     this.mapEditor.emit(EVENT.toolChange, { tool: this.current });
@@ -29,6 +34,7 @@ export class ToolManager {
   stopTool() {
     if (this.current) {
       this.current = null;
+      this.currentOptions = {};
       this.currentTool.dispose();
       this.currentTool = null;
     }

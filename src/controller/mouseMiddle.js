@@ -10,16 +10,40 @@ export class MouseMiddle {
   }
 
   _listen() {
-    const handleMouseMove = (e) => {
-      // 按住Ctrl键和鼠标左键拖动画布；按住鼠标中键拖动画布
-      if (e.e.buttons === 4) {
-        this.mapEditor.relativePan(e.e.movementX, e.e.movementY);
+    const { canvas } = this.mapEditor;
+    let lastCursor = null;
+    
+    const handleMouseDown = (e) => {
+      if (e.buttons === 4) {
+        lastCursor = canvas.defaultCursor;
+        canvas.defaultCursor = 'grab';
+        canvas.hoverCursor = 'grab';
+        canvas.upperCanvasEl.style.cursor = 'grab';
       }
     };
 
-    this.mapEditor.canvas.on('mouse:move', handleMouseMove);
+    const handleMouseMove = (e) => {
+      if (e.buttons === 4) {
+        this.mapEditor.relativePan(e.movementX, e.movementY);
+      }
+    };
+
+    const handleMouseUp = () => {
+      if (lastCursor) {
+        canvas.defaultCursor = lastCursor;
+        canvas.hoverCursor = lastCursor;
+        canvas.upperCanvasEl.style.cursor = lastCursor;
+        lastCursor = null;
+      }
+    };
+
+    canvas.upperCanvasEl.addEventListener('mousedown', handleMouseDown);
+    canvas.upperCanvasEl.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
     return () => {
-      this.mapEditor.canvas.off('mouse:move', handleMouseMove);
+      canvas.upperCanvasEl.removeEventListener('mousedown', handleMouseDown);
+      canvas.upperCanvasEl.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
     };
   }
 }

@@ -77,10 +77,6 @@ function App() {
     };
   }, []);
 
-  const handleShowMaskChange = () => {
-    editor.toggleMask();
-  };
-
   return (
     <ConfigProvider
       theme={{
@@ -94,10 +90,7 @@ function App() {
           <div className="app">
             <Head tool={tool} />
             <div className="body">
-              <MaterialLibrary
-                showMask={showMask}
-                onShowMaskChange={handleShowMaskChange}
-              />
+              <MaterialLibrary />
               <div className="canvas-wrapper" ref={canvasWrapper}>
                 <canvas id="canvas"></canvas>
                 <ViewControl

@@ -8,13 +8,19 @@ export class ToolText {
     this.mapEditor = mapEditor;
 
     if (this.mapEditor.showMask) {
-      this.mapEditor.toggleMask();
+      this.mapEditor.setMask(false);
     }
     
+    this.mapEditor.canvas.defaultCursor = 'text';
+    this.mapEditor.canvas.hoverCursor = 'text';
+
     this._unlisten = this._listen();
   }
 
   dispose() {
+    this.mapEditor.canvas.defaultCursor = 'default';
+    this.mapEditor.canvas.hoverCursor = 'default';
+
     this._unlisten();
   }
 

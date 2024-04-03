@@ -3,20 +3,13 @@ import { materials } from '../../mock/materials';
 import { useContext, useEffect, useState } from "react";
 import classNames from "classnames";
 import { EditorContext } from '../context';
-import { TOOL } from "../constants";
+import { TOOL, USER_LAYER } from "../constants";
 import { EVENT } from '../event';
 
 /* eslint-disable react/prop-types */
-export function MaterialLibrary({ showMask, onShowMaskChange }) {
+export function MaterialLibrary() {
   return (
     <div className="material-library">
-      <Checkbox
-        style={{margin: 16}}
-        checked={showMask}
-        onChange={onShowMaskChange}
-      >
-        进入隔离模式
-      </Checkbox>
       <MaterialList
         tool={TOOL.floor}
         title="地板"
@@ -36,6 +29,11 @@ export function MaterialLibrary({ showMask, onShowMaskChange }) {
         tool={TOOL.image}
         title="贴图"
         materials={[materials.sticker, materials.sticker2]}
+      />
+      <MaterialList
+        tool={TOOL.tiled}
+        title="效果"
+        materials={[materials.spawn, materials.impassable]}
       />
     </div>
   );
@@ -64,7 +62,11 @@ function MaterialList({ materials, tool, title}) {
 
   const handleClick = (material) => {
     setMaterial(material);
-    editor.stopTool();
+    if (material.layer === USER_LAYER.effect) {
+      editor.setMask(true);
+    } else {
+      editor.setMask(false);
+    }
     editor.invokeTool(tool, { material });
   };
 

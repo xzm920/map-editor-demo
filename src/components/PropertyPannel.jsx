@@ -38,10 +38,10 @@ export function PropertyPannel() {
     };
   }, [editor, mapItem]);
 
-  if (!selected) return null;
-
   let detail = null;
-  if (selected.type === MAP_ITEM_TYPE.image) {
+  if (!selected) {
+    detail = null;
+  } else if (selected.type === MAP_ITEM_TYPE.image) {
     detail = <ImageDetail selected={selected} />;
   } else if (selected.type === MAP_ITEM_TYPE.text) {
     detail = <TextDetail selected={selected} />;

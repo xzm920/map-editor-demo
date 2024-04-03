@@ -175,9 +175,15 @@ export class MapContainer extends EventEmitter {
   }
 
   addTiled(material, point) {
-    if (material.layer !== USER_LAYER.object) return;
+    let zIndex = null;
+    if (material.layer === USER_LAYER.object) {
+      zIndex = material.shelter ? LAYER.objAboveAvatar : LAYER.objBelowAvatar;
+    } else if (material.layer === USER_LAYER.effect) {
+      zIndex = LAYER.effect;
+    } else {
+      return;
+    }
 
-    const zIndex = material.shelter ? LAYER.objAboveAvatar : LAYER.objBelowAvatar;
     const layer = this.getLayer(zIndex);
     const newItem = createMapItemFromMaterial(material, point.x, point.y);
     layer.add(newItem);

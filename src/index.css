@@ -18,6 +18,8 @@ body {
   overflow: hidden;
 }
 .head {
+  position: relative;
+  z-index: 1;
   flex: none;
   height: 64px;
   padding: 0 16px;
@@ -36,12 +38,14 @@ body {
   overflow-y: auto;
   flex: none;
   width: 240px;
-  filter: drop-shadow(2px 0 6px rgba(0,0,0,.04));
+  border-right: 1px solid #eee;
+  box-sizing: border-box;
 }
 .property {
   flex: none;
   width: 240px;
-  box-shadow: -2px 0 6px rgba(0,0,0,.04);
+  border-left: 1px solid #eee;
+  box-sizing: border-box;
 }
 .canvas-wrapper {
   flex: 1;
@@ -175,6 +179,7 @@ body {
 }
 .icon-button.disabled {
   opacity: 0.4;
+  cursor: not-allowed;
 }
 .head-left {
   display: flex;

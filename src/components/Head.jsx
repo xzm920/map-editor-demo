@@ -49,32 +49,38 @@ export function Head({ tool }) {
     <div className="head">
       <div className="head-left">
         <IconButton
-          icon={<Icon name="undo" />}
+          name="undo"
+          tooltip="撤销(Ctrl/Command + Z)"
           disabled={!canUndo}
           onClick={handleUndo}
         />
         <IconButton
-          icon={<Icon name="redo" />}
+          name="redo"
+          tooltip="重做(Ctrl/Command + Shift + Z)"
           disabled={!canRedo}
           onClick={handleRedo}
         />
         <IconButton
-          icon={<Icon name={TOOL.select} />}
+          name="select"
+          tooltip="选择(V键)"
           active={tool === TOOL.select}
           onClick={() => invokeTool(TOOL.select)}
         />
         <IconButton
-          icon={<Icon name={TOOL.hand} />}
+          name="hand"
+          tooltip="拖动(H键)"
           active={tool === TOOL.hand}
           onClick={() => invokeTool(TOOL.hand)}
         />
         <IconButton
-          icon={<Icon name={TOOL.erase} />}
+          name="erase"
+          tooltip="擦除(E键)"
           active={tool === TOOL.erase}
           onClick={() => invokeTool(TOOL.erase)}
         />
         <IconButton
-          icon={<Icon name={TOOL.text} />}
+          name="text"
+          tooltip="文字(T键)"
           active={tool === TOOL.text}
           onClick={() => invokeTool(TOOL.text)}
         />
