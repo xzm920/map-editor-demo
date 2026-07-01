@@ -6,6 +6,7 @@ import VitePluginSvgSpritemap from '@spiriit/vite-plugin-svg-spritemap'
 export default defineConfig({
   server: {
     host: true,
+    port: 3000,
   },
   plugins: [
     react(),

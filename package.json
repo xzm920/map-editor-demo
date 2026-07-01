@@ -23,11 +23,10 @@
     "uuid": "^9.0.1"
   },
   "devDependencies": {
-    "@spiriit/vite-plugin-svg-spritemap": "^2.2.4",
+    "@spiriit/vite-plugin-svg-spritemap": "^7.0.0",
     "@types/react": "^18.2.66",
     "@types/react-dom": "^18.2.22",
-    "@vitejs/plugin-react": "^4.2.1",
-    "vite": "^5.1.6",
-    "vite-plugin-inspect": "^0.8.3"
+    "@vitejs/plugin-react": "^6.0.3",
+    "vite": "^8.1.2"
   }
 }
