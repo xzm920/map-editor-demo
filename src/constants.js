@@ -64,7 +64,7 @@ export const TOOL = {
   impassable: 'impassable',
 };
 
-export const IMPASSABLE_URL = 'https://dev-oss.vland.live/material/system/65433e2848c544d1ab0c43a51043f095_1649646689.png';
+export const IMPASSABLE_URL = '/materials/65433e2848c544d1ab0c43a51043f095_1649646689.png';
 
 export const TEXT_ALIGN = {
   left: 'LEFT',
