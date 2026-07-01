@@ -1,4 +1,4 @@
-import { clamp } from "lodash";
+import { clamp } from "lodash-es";
 import { EVENT } from "../event";
 
 export class ViewportManager {

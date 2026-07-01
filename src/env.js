@@ -1,7 +1,4 @@
-import UAParser from "ua-parser-js";
-
-const ua = new UAParser();
-export const isMac = ua.getOS().name === 'Mac OS';
+export const isMac = navigator.platform === "MacIntel";
 
 export function isCtrlOrCommandKey(e) {
   return isMac ? e.metaKey : e.ctrlKey;

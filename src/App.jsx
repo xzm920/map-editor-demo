@@ -1,7 +1,7 @@
 /* eslint-disable react/prop-types */
 import { useEffect, useRef, useState } from "react";
 import { ConfigProvider } from "antd";
-import { throttle } from "lodash";
+import { throttle } from "lodash-es";
 import { MapEditor } from "./mapEditor";
 import { materials } from "../mock/materials";
 import { resources } from '../mock/resources';

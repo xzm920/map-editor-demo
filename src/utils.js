@@ -1,8 +1,7 @@
-import { v4 } from "uuid";
 import { TILE_SIZE } from "./constants";
-import { clamp } from "lodash";
+import { clamp } from "lodash-es";
 
-export const uuid = v4;
+export const uuid = () => crypto.randomUUID();
 
 export function patchToChanges(object, patch) {
   return Object.keys(patch).map((key) => ({

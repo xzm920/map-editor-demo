@@ -15,12 +15,10 @@
     "classnames": "^2.5.1",
     "fabric": "^5.3.0",
     "fractional-indexing": "^3.2.0",
-    "lodash": "^4.17.21",
+    "lodash-es": "^4.18.1",
     "mitt": "^3.0.1",
     "react": "^18.2.0",
-    "react-dom": "^18.2.0",
-    "ua-parser-js": "^1.0.37",
-    "uuid": "^9.0.1"
+    "react-dom": "^18.2.0"
   },
   "devDependencies": {
     "@spiriit/vite-plugin-svg-spritemap": "^7.0.0",

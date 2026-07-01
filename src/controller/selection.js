@@ -1,4 +1,4 @@
-import { clamp } from "lodash";
+import { clamp } from "lodash-es";
 import { SELECTION, TILE_SIZE } from "../constants";
 import { EVENT } from "../event";
 import { getBBox, isPointInRect, isPointInRotatedRect } from "../geometry";
