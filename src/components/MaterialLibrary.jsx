@@ -3,10 +3,9 @@ import { materials } from '../../mock/materials';
 import { useContext, useEffect, useState } from "react";
 import classNames from "classnames";
 import { EditorContext } from '../context';
-import { TOOL, USER_LAYER } from "../constants";
-import { EVENT } from '../event';
+import { TOOL, USER_LAYER } from "../sdk/constants";
+import { EVENT } from '../sdk/event';
 
-/* eslint-disable react/prop-types */
 export function MaterialLibrary() {
   return (
     <div className="material-library">

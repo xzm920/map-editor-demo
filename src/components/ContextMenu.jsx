@@ -2,7 +2,7 @@
 import { useContext, useEffect, useState } from "react";
 import { EditorContext, MapItemContext } from "../context";
 import { createPortal } from "react-dom";
-import { EVENT } from "../event";
+import { EVENT } from "../sdk/event";
 
 export function ContextMenu() {
   const editor = useContext(EditorContext);

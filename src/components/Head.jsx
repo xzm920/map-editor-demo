@@ -1,9 +1,8 @@
-/* eslint-disable react/prop-types */
 import { IconButton } from "./IconButton";
-import { TOOL } from "../constants";
+import { TOOL } from "../sdk/constants";
 import { useContext, useEffect, useState } from "react";
 import { EditorContext } from "../context";
-import { EVENT } from "../event";
+import { EVENT } from "../sdk/event";
 import { Icon } from './Icon';
 
 export function Head({ tool }) {

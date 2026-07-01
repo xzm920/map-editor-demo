@@ -1,6 +1,6 @@
 import { useContext, useEffect, useState } from "react";
 import { EditorContext } from "../context";
-import { EVENT } from "../event";
+import { EVENT } from "../sdk/event";
 import { ExpandOutlined, MinusOutlined, PlusOutlined } from "@ant-design/icons";
 
 export function ZoomControl() {

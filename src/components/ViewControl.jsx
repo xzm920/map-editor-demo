@@ -1,6 +1,5 @@
-/* eslint-disable react/prop-types */
 import { Checkbox } from "antd";
-import { EVENT } from "../event";
+import { EVENT } from "../sdk/event";
 import { useContext, useEffect, useState } from "react";
 import { EditorContext } from "../context";
 

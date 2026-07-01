@@ -1,13 +1,12 @@
-/* eslint-disable react/prop-types */
 import { useEffect, useRef, useState } from "react";
 import { ConfigProvider } from "antd";
 import { throttle } from "lodash-es";
-import { MapEditor } from "./mapEditor";
+import { MapEditor } from "./sdk/mapEditor";
 import { materials } from "../mock/materials";
 import { resources } from '../mock/resources';
-import { TILE_SIZE, TOOL } from "./constants";
-import { createBackgroundImageFromResource, createMapItemFromMaterial, createText } from "./model/create";
-import { EVENT } from "./event";
+import { TILE_SIZE, TOOL } from "./sdk/constants";
+import { createBackgroundImageFromResource, createMapItemFromMaterial, createText } from "./sdk/model/create";
+import { EVENT } from "./sdk/event";
 import { EditorContext, MapItemContext } from "./context";
 import { PropertyPannel } from "./components/PropertyPannel";
 import { ContextMenu } from "./components/ContextMenu";

@@ -1,10 +1,9 @@
-/* eslint-disable react/prop-types */
 import { useContext, useEffect, useRef, useState } from "react";
-import { DEFAULT_LINE_HEIGHT, MAP_ITEM_TYPE, TEXT_ALIGN } from "../constants";
+import { DEFAULT_LINE_HEIGHT, MAP_ITEM_TYPE, TEXT_ALIGN } from "../sdk/constants";
 import { Checkbox, ColorPicker, InputNumber, Slider } from "antd";
 import { AlignCenterOutlined, AlignLeftOutlined, AlignRightOutlined, BoldOutlined, ItalicOutlined, UnderlineOutlined } from "@ant-design/icons";
 import { EditorContext, MapItemContext } from "../context";
-import { EVENT } from "../event";
+import { EVENT } from "../sdk/event";
 
 export function PropertyPannel() {
   const editor = useContext(EditorContext);
