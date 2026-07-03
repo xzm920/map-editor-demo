@@ -13,7 +13,7 @@ export function PropertyPannel() {
 
   useEffect(() => {
     if (!editor) return;
-    
+
     setSelected(mapItem ? { ...mapItem } : null);
 
     const handleUpdate = ({ item }) => {
@@ -21,7 +21,7 @@ export function PropertyPannel() {
         setSelected(item ? { ...item } : null);
       }
     };
-    
+
     const handleToggleMaskPlayer = ({ mapItem: item }) => {
       if (item === mapItem) {
         setSelected(item ? { ...item } : null);
@@ -30,7 +30,7 @@ export function PropertyPannel() {
 
     editor.on(EVENT.update, handleUpdate);
     editor.on(EVENT.toggleMaskPlayer, handleToggleMaskPlayer);
-  
+
     return () => {
       editor.off(EVENT.update, handleUpdate);
       editor.off(EVENT.toggleMaskPlayer, handleToggleMaskPlayer);
@@ -61,7 +61,7 @@ function BaseDetail({ selected }) {
   return (
     <div className="detail">
       <div>
-        <div>{selected.name}</div>
+        <div className="detail-name">{selected.name}</div>
         <div>
           <img className="detail-image" src={selected.imageURL} />
         </div>
@@ -76,13 +76,13 @@ function TiledDetail({ selected }) {
   return (
     <div className="detail">
       <div>
-        <div>{selected.name}</div>
+        <div className="detail-name">{selected.name}</div>
         <div>
           <img className="detail-image" src={selected.imageURL} />
         </div>
       </div>
       <div>
-        <div>基本属性</div>
+        <div className="detail-name">基本属性</div>
         <div>
           <Checkbox
             checked={selected.isMaskPlayer}
@@ -115,13 +115,13 @@ function ImageDetail({ selected }) {
   return (
     <div className="detail">
       <div>
-        <div>{selected.name}</div>
+        <div className="detail-name">{selected.name}</div>
         <div>
           <img className="detail-image" src={selected.imageURL} />
         </div>
       </div>
       <div>
-        <div>贴图效果</div>
+        <div className="detail-name">贴图效果</div>
         <div>
           <Slider
             value={opacity}
@@ -134,7 +134,7 @@ function ImageDetail({ selected }) {
         </div>
       </div>
       <div>
-        <div>基本属性</div>
+        <div className="detail-name">基本属性</div>
         <div>
           <Checkbox
             checked={selected.isMaskPlayer}
@@ -169,7 +169,7 @@ function TextDetail({ selected }) {
   useEffect(() => {
     setFontSize(selected.fontSize);
   }, [selected.fontSize]);
-  
+
 
   useEffect(() => {
     setLineHeight(selected.lineHeight);
@@ -187,7 +187,7 @@ function TextDetail({ selected }) {
   return (
     <div className="detail">
       <div>
-        <div>文字效果</div>
+        <div className="detail-name">文字效果</div>
         <div>
           <Slider
             value={opacity}
@@ -197,20 +197,10 @@ function TextDetail({ selected }) {
         </div>
       </div>
       <div>
-        <div>文字样式</div>
-        <div>
-          <ColorPicker
-            disabledAlpha
-            value={color}
-            onChange={(_, hex) => {
-              setColor(hex);
-              editor.setViewByItem(mapItem, { color: hex });
-            }}
-            onChangeComplete={(color) => mapItem.setColor(color.toHexString()) }
-          />
-        </div>
-        <div>
+        <div className="detail-name">文字样式</div>
+        <div style={{ marginBlock: 16 }}>
           <InputNumber
+            style={{ width: 64 }}
             ref={fontSizeRef}
             value={fontSize}
             min={10}
@@ -228,39 +218,11 @@ function TextDetail({ selected }) {
                 mapItem.setFontSize(fontSize);
               }
             }}
-            onPressEnter={() => fontSizeRef.current.blur() }
+            onPressEnter={() => fontSizeRef.current.blur()}
           />
-        </div>
-        <div>
-          <ItalicOutlined
-            className={`icon ${selected.isItalic ? 'active' : ''}`}
-            onClick={() => mapItem.setItalic(!mapItem.isItalic) }
-          />
-          <BoldOutlined
-            className={`icon ${selected.isBold ? 'active' : ''}`}
-            onClick={() => mapItem.setBold(!mapItem.isBold) }
-          />
-          <UnderlineOutlined
-            className={`icon ${selected.isUnderline ? 'active' : ''}`}
-            onClick={() => mapItem.setUnderline(!mapItem.isUnderline) }
-          />
-        </div>
-        <div>
-          <AlignLeftOutlined
-            className={`icon ${selected.horizontalAlign === TEXT_ALIGN.left ? 'active' : ''}`}
-            onClick={() => mapItem.setTextAlign(TEXT_ALIGN.left) }
-          />
-          <AlignCenterOutlined
-            className={`icon ${selected.horizontalAlign === TEXT_ALIGN.center ? 'active' : ''}`}
-            onClick={() => mapItem.setTextAlign(TEXT_ALIGN.center) }
-          />
-          <AlignRightOutlined
-            className={`icon ${selected.horizontalAlign === TEXT_ALIGN.right ? 'active' : ''}`}
-            onClick={() => mapItem.setTextAlign(TEXT_ALIGN.right) }
-          />
-        </div>
-        <div>
+          <span style={{ marginInline: 4 }}>行高</span>
           <InputNumber
+            style={{ width: 80 }}
             ref={lineHeightRef}
             value={lineHeight}
             min={1}
@@ -274,12 +236,51 @@ function TextDetail({ selected }) {
             onBlur={() => {
               mapItem.setLineHeight(lineHeight);
             }}
-            onPressEnter={() => lineHeightRef.current.blur() }
+            onPressEnter={() => lineHeightRef.current.blur()}
+          />
+        </div>
+        <div style={{ marginBlock: 16 }}>
+          <ItalicOutlined
+            className={`icon ${selected.isItalic ? 'active' : ''}`}
+            onClick={() => mapItem.setItalic(!mapItem.isItalic)}
+          />
+          <BoldOutlined
+            className={`icon ${selected.isBold ? 'active' : ''}`}
+            onClick={() => mapItem.setBold(!mapItem.isBold)}
+          />
+          <UnderlineOutlined
+            className={`icon ${selected.isUnderline ? 'active' : ''}`}
+            onClick={() => mapItem.setUnderline(!mapItem.isUnderline)}
+          />
+        </div>
+        <div style={{ marginBlock: 16 }}>
+          <AlignLeftOutlined
+            className={`icon ${selected.horizontalAlign === TEXT_ALIGN.left ? 'active' : ''}`}
+            onClick={() => mapItem.setTextAlign(TEXT_ALIGN.left)}
+          />
+          <AlignCenterOutlined
+            className={`icon ${selected.horizontalAlign === TEXT_ALIGN.center ? 'active' : ''}`}
+            onClick={() => mapItem.setTextAlign(TEXT_ALIGN.center)}
+          />
+          <AlignRightOutlined
+            className={`icon ${selected.horizontalAlign === TEXT_ALIGN.right ? 'active' : ''}`}
+            onClick={() => mapItem.setTextAlign(TEXT_ALIGN.right)}
+          />
+        </div>
+        <div style={{ marginBlock: 16 }}>
+          <ColorPicker
+            disabledAlpha
+            value={color}
+            onChange={(_, hex) => {
+              setColor(hex);
+              editor.setViewByItem(mapItem, { color: hex });
+            }}
+            onChangeComplete={(color) => mapItem.setColor(color.toHexString())}
           />
         </div>
       </div>
       <div>
-        <div>基本属性</div>
+        <div className="detail-name">基本属性</div>
         <div>
           <Checkbox
             checked={selected.isMaskPlayer}

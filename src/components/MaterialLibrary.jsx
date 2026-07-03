@@ -38,7 +38,7 @@ export function MaterialLibrary() {
   );
 }
 
-function MaterialList({ materials, tool, title}) {
+function MaterialList({ materials, tool, title }) {
   const editor = useContext(EditorContext);
 
   const [material, setMaterial] = useState(null);
@@ -72,8 +72,8 @@ function MaterialList({ materials, tool, title}) {
   };
 
   return (
-    <div>
-      <div>{title}</div>
+    <div className="material-category">
+      <div className="material-category-name">{title}</div>
       <div className="material-list">
         {materials.map((item) => (
           <img
