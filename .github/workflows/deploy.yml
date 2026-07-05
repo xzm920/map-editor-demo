@@ -65,9 +65,10 @@ jobs:
           host: ${{ vars.SERVER_IP }}
           username: ${{ vars.SERVER_USER }}
           key: ${{ secrets.SERVER_SSH_KEY }}
+          envs: DEPLOY_IMAGE
           script: |
             echo "start deployment"
-            echo "pull container image: ${DEPLOY_IMAGE}"
+            echo "pull container image: $DEPLOY_IMAGE"
             podman pull "$DEPLOY_IMAGE"
             echo "stop container"
             podman compose -f ~/deployment/map-editor-demo/docker-compose.yml down
