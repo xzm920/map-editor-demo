@@ -60,15 +60,15 @@ jobs:
       - name: Execute remote SSH commands using SSH key
         uses: appleboy/ssh-action@v1
         env:
-          SHA: ${{ github.sha }}
+          DEPLOY_IMAGE: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@sha256:${{ steps.push.outputs.digest }}
         with:
           host: ${{ vars.SERVER_IP }}
           username: ${{ vars.SERVER_USER }}
           key: ${{ secrets.SERVER_SSH_KEY }}
           script: |
             echo "start deployment"
-            echo "pull container image"
-            podman pull "${REGISTRY}/${IMAGE_NAME}@sha256:${SHA}"
+            echo "pull container image: ${DEPLOY_IMAGE}"
+            podman pull "$DEPLOY_IMAGE"
             echo "stop container"
             podman compose -f ~/deployment/map-editor-demo/docker-compose.yml down
             echo "start container"

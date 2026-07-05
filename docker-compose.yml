@@ -1,6 +1,6 @@
 services:
   map-editor-demo:
-    image: ${REGISTRY}/${IMAGE_NAME}@sha256:${SHA}
+    image: ${DEPLOY_IMAGE}
     container_name: map-editor-demo
     network_mode: "host"
     restart: unless-stopped
