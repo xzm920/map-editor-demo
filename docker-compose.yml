@@ -1,6 +1,6 @@
 services:
   map-editor-demo:
-    image: ${REGISTRY}/${IMAGE_NAME}@${SHA}
+    image: ${REGISTRY}/${IMAGE_NAME}@sha256:${SHA}
     container_name: map-editor-demo
     network_mode: "host"
     restart: unless-stopped
@@ -10,5 +10,3 @@ services:
       - "traefik.http.routers.map-editor-demo.entrypoints=websecure"
       - "traefik.http.routers.map-editor-demo.service=map-editor-demo-service"
       - "traefik.http.services.map-editor-demo-service.loadbalancer.server.url=http://127.0.0.1:8000"
-    ports:
-      - "8000:8000"

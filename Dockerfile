@@ -14,6 +14,6 @@ RUN npm run build
 FROM nginx:1.31-alpine-slim
 COPY --from=builder /app/dist /usr/share/nginx/html
 
-EXPOSE 80
+EXPOSE 8000
 
 CMD ["nginx", "-g", "daemon off;"]
