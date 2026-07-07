@@ -38,7 +38,7 @@ jobs:
       packages: write
     steps:
       - name: Download artifacts
-        uses: actions/download-artifacts@v8
+        uses: actions/download-artifact@v8
         with:
           name: dist
           path: dist/
