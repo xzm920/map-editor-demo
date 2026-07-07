@@ -1,9 +1,8 @@
 name: Create and publish a Docker image
 
 on:
-  push:
-    tags:
-      - 'v*'
+  release:
+    types: [published]
 
 env:
   REGISTRY: ghcr.io
@@ -12,15 +11,17 @@ env:
 jobs:
   build-and-push-image:
     runs-on: ubuntu-latest
-    environment: production
     permissions:
       contents: read
       packages: write
       attestations: write
       id-token: write
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v7
+      - name: Download artifacts
+        uses: actions/download-artifacts@v8
+        with:
+          name: production-dist
+          path: dist/
       - name: Log in to the Container registry
         uses: docker/login-action@v4
         with:
@@ -43,35 +44,3 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-      # - name: Generate artifact attestation
-      #   uses: actions/attest@v4
-      #   with:
-      #     subject-name: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-      #     subject-digest: ${{ steps.push.outputs.digest }}
-      #     push-to-registry: true
-      - name: Copy docker-compose.yml via SCP
-        uses: appleboy/scp-action@v1
-        with:
-          host: ${{ vars.SERVER_IP }}
-          username: ${{ vars.SERVER_USER }}
-          key: ${{ secrets.SERVER_SSH_KEY }}
-          source: "docker-compose.yml"
-          target: "~/deployment/map-editor-demo"
-      - name: Execute remote SSH commands using SSH key
-        uses: appleboy/ssh-action@v1
-        env:
-          DEPLOY_IMAGE: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@${{ steps.push.outputs.digest }}
-        with:
-          host: ${{ vars.SERVER_IP }}
-          username: ${{ vars.SERVER_USER }}
-          key: ${{ secrets.SERVER_SSH_KEY }}
-          envs: DEPLOY_IMAGE
-          script: |
-            echo "start deployment"
-            echo "pull container image: $DEPLOY_IMAGE"
-            podman pull "$DEPLOY_IMAGE"
-            echo "stop container"
-            podman compose -f ~/deployment/map-editor-demo/docker-compose.yml down
-            echo "start container"
-            podman compose -f ~/deployment/map-editor-demo/docker-compose.yml up -d
-            echo "complete deployment"
