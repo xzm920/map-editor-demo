@@ -37,6 +37,8 @@ jobs:
       contents: read
       packages: write
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
       - name: Download artifacts
         uses: actions/download-artifact@v8
         with:
